@@ -1,5 +1,3 @@
-models/*
-models
 dataset/shapenet_*/*
 dataset/shapenet_*
 checkpoints/*
