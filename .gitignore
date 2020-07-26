@@ -1,4 +1,4 @@
-dataset/shapenet_*/*
-dataset/shapenet_*
+shapenet_*/*
+shapenet_*
 checkpoints/*
 checkpoints
