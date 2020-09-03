@@ -22,6 +22,11 @@ from collections import OrderedDict
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
+### visualizer alteration
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../utils")))
+import pcl_save as pcs
+pcs.clear_dir()
+
 import shapenet_part_loader
 
 
@@ -33,6 +38,9 @@ import matplotlib.pyplot as plt
 PointCloud = geometry.PointCloud
 Vector3dVector = utility.Vector3dVector
 draw_geometries = visualization.draw_geometries
+viz = visualization.Visualizer()
+
+image_id = 0
 
 
 USE_CUDA = True
@@ -107,4 +115,12 @@ for batch_id, data in enumerate(test_dataloader):
                 pcd_list[j].paint_uniform_color([0.8,0.8,0.8])
             colored_re_pointcloud+=pcd_list[j]
 
-        draw_geometries([colored_re_pointcloud])
+        #draw_geometries([colored_re_pointcloud])
+        ## enabled local visualization
+        pcs.pcl_save([colored_re_pointcloud], "p%03d_b%03d"%(pointset_id, batch_id))
+
+        #for i in range(len([colored_re_pointcloud])):
+            # do ICP single iteration
+            # transform geometry using ICP
+        #   viz.capture_screen_image("image/{:05d}.png".format(image_id), False)
+         #   image_id += 1
