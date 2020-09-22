@@ -2,3 +2,4 @@ shapenet_*/*
 shapenet_*
 checkpoints/*
 checkpoints
+__pycache__

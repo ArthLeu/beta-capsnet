@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 ### visualizer alteration
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../utils")))
-import pcl_save as pcs
-pcs.clear_dir()
+#sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../utils")))
+#import pcl_save as pcs
+#pcs.clear_dir()
 
 import shapenet_part_loader
 
@@ -45,7 +45,7 @@ image_id = 0
 
 USE_CUDA = True
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
+parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
 parser.add_argument('--num_points', type=int, default=2048, help='number of poins')
 parser.add_argument('--model', type=str, default='', help='model path')    
 parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of prim_caps')
