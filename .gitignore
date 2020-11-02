@@ -3,3 +3,5 @@ shapenet_*
 checkpoints/*
 checkpoints
 __pycache__
+dataset/*
+dataset

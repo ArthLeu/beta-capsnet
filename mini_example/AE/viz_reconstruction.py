@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Nov 11 21:38:43 2018
+Created on Nov 2, 2020
 
-@author: zhao
+@author: liu
 """
 
 import argparse
@@ -22,15 +22,12 @@ from collections import OrderedDict
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
-### visualizer alteration
-#sys.path.append(os.path.abspath(os.path.join(BASE_DIR, "../../utils")))
-#import pcl_save as pcs
-#pcs.clear_dir()
+
 
 import shapenet_part_loader
 
 
-from pointcapsnet_ae import PointCapsNet
+from bcaps_model import BetaPointCapsNet
 from open3d import *
 import matplotlib.pyplot as plt
 
@@ -57,7 +54,7 @@ opt = parser.parse_args()
 print(opt)
 
 
-capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
+capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
 if opt.model != '':
     capsule_net.load_state_dict(torch.load(opt.model))
 else:
@@ -93,7 +90,8 @@ for batch_id, data in enumerate(test_dataloader):
     points = points.transpose(2, 1)
     if USE_CUDA:
         points = points.cuda()
-    latent_capsules, reconstructions= capsule_net(points)
+    #latent_capsules, reconstructions= capsule_net(points)
+    _, _, reconstructions = capsule_net(points)
 
     for pointset_id in range(opt.batch_size):
         

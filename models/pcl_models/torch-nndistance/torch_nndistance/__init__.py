@@ -7,12 +7,13 @@ import torch_nndistance_aten as my_lib
 
 
 class NNDFunction(Function):
+    @staticmethod
     def forward(self, xyz1, xyz2):
         batchsize, n, _ = xyz1.size()
         _, m, _ = xyz2.size()   
         
-#        self.xyz1 = xyz1[...]
-#        self.xyz2 = xyz2[...]
+        #self.xyz1 = xyz1[...]
+        #self.xyz2 = xyz2[...]
         dist1 = torch.zeros(batchsize, n)
         dist2 = torch.zeros(batchsize, m)
         
@@ -28,13 +29,14 @@ class NNDFunction(Function):
             idx2 = idx2.cuda()
             my_lib.nnd_forward_cuda(xyz1, xyz2, dist1, dist2, idx1, idx2)
             
-#        self.dist1 = dist1
-#        self.dist2 = dist2
+        #self.dist1 = dist1
+        #self.dist2 = dist2
         
         #print(batchsize, n, m)
         self.save_for_backward(xyz1,xyz2,dist1,dist2,idx1,idx2)
         return dist1, dist2
 
+    @staticmethod
     def backward(self, graddist1, graddist2):
         #print(self.idx1, self.idx2)
         xyz1,xyz2,dist1,dist2,idx1,idx2 = self.saved_tensors
@@ -61,5 +63,4 @@ class NNDFunction(Function):
 
 def nnd(xyz1, xyz2):
 #    return NNDFunction.apply(xyz1, xyz2)
-    return NNDFunction()(xyz1, xyz2)
-
+    return NNDFunction.apply(xyz1, xyz2)

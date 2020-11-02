@@ -127,6 +127,8 @@ class CapsDecoder(nn.Module):
         for i in range(0, self.nb_primitives):
             rand_grid = Variable(torch.cuda.FloatTensor(x.size(0), 2, self.latent_caps_size))
             rand_grid.data.uniform_(0, 1)
+            print(x.size())
+            print(rand_grid.size())
             y = torch.cat((rand_grid, x.transpose(2, 1)), 1).contiguous()
             outs.append(self.decoder[i](y))
         return torch.cat(outs, 2).contiguous()

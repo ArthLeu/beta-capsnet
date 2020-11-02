@@ -1,8 +1,0 @@
-README.md
-build.py
-my_lib_cuda.egg-info/PKG-INFO
-my_lib_cuda.egg-info/SOURCES.txt
-my_lib_cuda.egg-info/dependency_links.txt
-my_lib_cuda.egg-info/top_level.txt
-src/my_lib_cuda.cpp
-src/nnd_cuda.cu

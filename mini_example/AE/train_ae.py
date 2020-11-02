@@ -10,12 +10,12 @@ sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 
 import shapenet_part_loader
-from pointcapsnet_ae import PointCapsNet
+from bcaps_model import BetaPointCapsNet
 
 def main():
     USE_CUDA = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
+    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
@@ -52,7 +52,7 @@ def main():
                 points = points.cuda()
 
             optimizer.zero_grad()
-            codewords, reconstructions= capsule_net(points)
+            _, _, reconstructions= capsule_net(points)
             train_loss = capsule_net.module.loss(points, reconstructions)
             train_loss.backward()
             optimizer.step()
