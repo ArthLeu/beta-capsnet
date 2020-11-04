@@ -91,7 +91,7 @@ for batch_id, data in enumerate(test_dataloader):
     if USE_CUDA:
         points = points.cuda()
     #latent_capsules, reconstructions= capsule_net(points)
-    _, _, reconstructions = capsule_net(points)
+    reconstructions, _, _ = capsule_net(points)
 
     for pointset_id in range(opt.batch_size):
         
