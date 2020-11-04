@@ -27,7 +27,7 @@ def main():
 
     #create folder to save trained models
     if not os.path.exists(opt.outf):
-        os.makedirs(opt.outf);
+        os.makedirs(opt.outf)
         
     train_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='train')
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
