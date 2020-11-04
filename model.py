@@ -203,7 +203,6 @@ class BetaPointCapsNet(nn.Module):
         return loss 
 
 
-
 def kaiming_init(m):
     if isinstance(m, (nn.Linear, nn.Conv2d)):
         init.kaiming_normal(m.weight)
@@ -232,9 +231,9 @@ if __name__ == '__main__':
     prim_caps_size=1024
     prim_vec_size=16
     
-    latent_caps_size=32
+    latent_caps_size=32 # number of latent capsules
     #latent_caps_size=1
-    latent_vec_size=16
+    latent_vec_size=16 # scale of (number of neurons in) latent capsules
     #latent_vec_size = 1
     
     num_points=2048
@@ -247,8 +246,8 @@ if __name__ == '__main__':
     rand_data = rand_data.transpose(2, 1)
     rand_data=rand_data.cuda()
     
-    recon_all =point_caps_ae(rand_data)
-    reconstruction = recon_all[2]
+    recon_all =point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
+    reconstruction = recon_all[0]
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()
