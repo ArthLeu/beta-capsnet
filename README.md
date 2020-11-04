@@ -21,7 +21,7 @@ Install h5py for Python:
 
 Install Chamfer Distance(CD) package:
 ```bash
-  cd models/torch_nndistance
+  cd reference_models/pcl_models/torch_nndistance
   python3 build.py install
 ```
 
