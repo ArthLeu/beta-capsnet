@@ -15,12 +15,9 @@ from collections import OrderedDict
 
 
 def reparametrize(mu, logvar):
-    #print("in reparametrize mu:",mu.size())
-    #print("in reparametrize logvar:",logvar.size())
     std = logvar.div(2).exp()
     eps = Variable(std.data.new(std.size()).normal_())
     ret = mu + std*eps
-    #print("in reparametrize ret:",ret.size())
     return ret
 
 
@@ -166,7 +163,6 @@ class BetaPointCapsNet(nn.Module):
                 kaiming_init(m)
 
     def forward(self, x):
-        #print("in combined>foward x:",x.size())
         distributions = self._encode(x) # distribution makes sense when capsule vector size is 1
         mu = distributions[:, :, :self.latent_vec_size] # saves mean values to first half of latent vectors
         logvar = distributions[:, :, self.latent_vec_size:] # saves logvar values to second half of latent vectors
@@ -179,23 +175,20 @@ class BetaPointCapsNet(nn.Module):
 
     def _encode(self, x):
         x1 = self.conv_layer(x)
-        #print("in combined>encode x1:",x1.size())
         x2 = self.primary_point_caps_layer(x1)
-        #print("in combined>encode x2:",x2.size())
         latent_capsules = self.latent_caps_layer(x2)
-        #print("in combined>encode lc:",latent_capsules.size())
         return latent_capsules
 
     def _decode(self, z):
         ''' z is equivalent to latent capsules '''
-        #print("in combined>decode z:",z.size())
         reconstructions = self.caps_decoder(z)
         return reconstructions
 
     def loss(self, data, reconstructions):
-        return self.reconstruction_loss(data, reconstructions)
+        return self.NRL(data, reconstructions)
 
-    def reconstruction_loss(self, data, reconstructions):
+    def NRL(self, data, reconstructions):
+        ''' naive reconstruction loss '''
         data_ = data.transpose(2, 1).contiguous()
         reconstructions_ = reconstructions.transpose(2, 1).contiguous()
         dist1, dist2 = NND.nnd(data_, reconstructions_)
@@ -232,27 +225,25 @@ if __name__ == '__main__':
     prim_vec_size=16
     
     latent_caps_size=32 # number of latent capsules
-    #latent_caps_size=1
     latent_vec_size=16 # scale of (number of neurons in) latent capsules
-    #latent_vec_size = 1
     
     num_points=2048
 
     point_caps_ae = BetaPointCapsNet(prim_caps_size,prim_vec_size,latent_caps_size,latent_vec_size,num_points)
     point_caps_ae=torch.nn.DataParallel(point_caps_ae).cuda()
     
-    rand_data=torch.rand(batch_size,num_points, 3) 
+    rand_data = torch.rand(batch_size,num_points, 3) 
     rand_data = Variable(rand_data)
     rand_data = rand_data.transpose(2, 1)
-    rand_data=rand_data.cuda()
+    rand_data = rand_data.cuda()
     
-    recon_all =point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
+    recon_all = point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
     reconstruction = recon_all[0]
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()
     dist1, dist2 = NND.nnd(rand_data_, reconstruction_)
     loss = (torch.mean(dist1)) + (torch.mean(dist2))
-    print("Testing: loss =",loss.item()) 
+    print("model.py test loss: ",loss.item()) 
 
     

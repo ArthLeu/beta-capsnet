@@ -1,22 +1,34 @@
 """bcaps_solver.py"""
 
 import os
+import sys
 
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, 'utils/torch_nnd/chamfer_distance')))
+from chamfer_distance import ChamferDistance
+CD = ChamferDistance()
 
-def reconstruction_loss(x, x_recon, distribution):
+
+def reconstruction_loss(x, x_recon, mode):
     batch_size = x.size(0)
     assert batch_size != 0
 
-    if distribution == 'bernoulli':
+    if mode == 'bernoulli':
         recon_loss = F.binary_cross_entropy_with_logits(x_recon, x, size_average=False).div(batch_size)
-    elif distribution == 'gaussian':
+    elif mode == 'gaussian':
         x_recon = F.sigmoid(x_recon)
         recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
+    elif mode == 'chamfer':
+        x_ = x.transpose(2, 1).contiguous()
+        reconstructions_ = x_recon.transpose(2, 1).contiguous()
+        #dist1, dist2 = NND.nnd(x_, reconstructions_)
+        dist1, dist2 = CD(x_, reconstructions_)
+        recon_loss = (torch.mean(dist1)) + (torch.mean(dist2))
     else:
         recon_loss = None
 
