@@ -113,6 +113,8 @@ def main():
                     beta_loss = gamma*(total_kld-C).abs()
 
                 train_loss = (recon_loss + beta_loss).sum()
+                recon_loss_sum += recon_loss.sum().item()
+                beta_loss_sum += beta_loss.sum().item()
                 
                 # original train loss computation (deprecated)
                 #train_loss = capsule_net.module.loss(points, x_recon)
@@ -121,9 +123,7 @@ def main():
                 # combining per capsule loss (pyTorch requires)
                 train_loss.backward()
                 optimizer.step()
-                train_loss_sum += train_loss
-                recon_loss_sum += recon_loss.sum()
-                beta_loss_sum += beta_loss.sum()
+                train_loss_sum += train_loss.item()
 
                 # ---- END OF CRITICAL PART ----
                 
@@ -189,9 +189,9 @@ def main():
 
                 train_loss.backward()
                 optimizer.step()
-                train_loss_sum += train_loss
-                recon_loss_sum += recon_loss.sum()
-                beta_loss_sum += beta_loss.sum()
+                train_loss_sum += train_loss.item()
+                recon_loss_sum += recon_loss.sum().item()
+                beta_loss_sum += beta_loss.sum().item()
                 # ---- END OF CRITICAL PART ----       
 
                 if LOGGING:
@@ -201,7 +201,7 @@ def main():
                             tag, value, (int(57448/opt.batch_size) * epoch) + batch_id + 1)
                     
                 if batch_id % 50 == 0:
-                    print('batch_no: %d / %d at epoch %d; train_loss: %f ' %  (batch_id, int(57448/opt.batch_size),epoch,scalar_loss.item() )) # the dataset size is 57448
+                    print('batch_no: %d / %d at epoch %d; train_loss: %f ' %  (batch_id, int(57448/opt.batch_size),epoch,train_loss.item() )) # the dataset size is 57448
             
             print('Average train loss of epoch %d : %f' % \
                 (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
