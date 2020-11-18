@@ -8,8 +8,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, 'utils/torch_nnd/chamfer_distance')))
 from chamfer_distance import ChamferDistance
 CD = ChamferDistance()
 

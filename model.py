@@ -1,5 +1,7 @@
 """bcaps_model.py"""
 
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,11 +9,6 @@ import torch.nn.init as init
 from torch.autograd import Variable
 
 import sys, os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(BASE_DIR, 'pcl_models/torch-nndistance'))
-import torch_nndistance as NND
-
-from collections import OrderedDict
 
 
 def reparametrize(mu, logvar):
@@ -218,6 +215,10 @@ def normal_init(m, mean, std):
             m.bias.data.zero_()
 
 if __name__ == '__main__':
+
+    from chamfer_distance import ChamferDistance
+    CD = ChamferDistance()
+
     USE_CUDA = True
     batch_size=2 # ORIGINAL IS 8
     
@@ -242,7 +243,7 @@ if __name__ == '__main__':
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()
-    dist1, dist2 = NND.nnd(rand_data_, reconstruction_)
+    dist1, dist2 = CD(rand_data_, reconstruction_)
     loss = (torch.mean(dist1)) + (torch.mean(dist2))
     print("model.py test loss: ",loss.item()) 
 
