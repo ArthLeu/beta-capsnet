@@ -8,3 +8,4 @@ dataset
 .vscode/*
 .vscode
 tmp_checkpoints
+exp
