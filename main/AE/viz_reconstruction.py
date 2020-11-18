@@ -36,7 +36,6 @@ def show_points(points_tensor):
 
 
 def main():
-    
     #create pcd object list to save the reconstructed patch per capsule
     pcd_list=[]
     for i in range(opt.latent_caps_size):
@@ -71,7 +70,8 @@ def main():
         test_dataset = shapenet_core55_loader.Shapnet55Dataset(batch_size=opt.batch_size,npoints=opt.num_points, shuffle=True, train=False)
 
 
-    capsule_net.eval()    
+    capsule_net.eval()
+    # test process for shapenet_part 
     if 'test_dataloader' in locals().keys() :
         test_loss_sum = 0
         for batch_id, data in enumerate(test_dataloader):
@@ -82,7 +82,7 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            show_points(points)
+            show_points(points) # temporary
             reconstructions, _, _ = capsule_net(points)
                         
             for pointset_id in range(opt.batch_size):        
@@ -105,8 +105,7 @@ def main():
                 draw_geometries([colored_re_pointcloud])
 
     
-         
-# test process for 'shapenet_core55'
+    # test process for 'shapenet_core55'
     else:
         test_loss_sum = 0
         while test_dataset.has_next_batch():    
