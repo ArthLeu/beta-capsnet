@@ -62,7 +62,7 @@ def main():
     #loss_mode = 'gaussian' # loss_mode was decoder_list in bVAE
     loss_mode = 'chamfer' 
 
-    loss_objective = "B" # Higgin et al "H", or Burgess et al "B"
+    loss_objective = "H" # Higgin et al "H", or Burgess et al "B"
 
     C_max = 25          # default 25, pending addition to args
     C_stop_iter = 1e5   # default 1e5, pending addition to args
