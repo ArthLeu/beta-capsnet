@@ -9,3 +9,4 @@ dataset
 .vscode
 tmp_checkpoints
 exp
+logs

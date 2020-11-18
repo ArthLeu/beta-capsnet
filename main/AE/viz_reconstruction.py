@@ -1,18 +1,19 @@
 import argparse
+import sys
+import os
+
 import torch
 import torch.nn.parallel
 from torch.autograd import Variable
 import torch.optim as optim
-import sys
-import os
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
 
-from pointcapsnet_ae import PointCapsNet
 from model import BetaPointCapsNet
 from open3d import *
 import matplotlib.pyplot as plt
@@ -25,6 +26,14 @@ viz = visualization.Visualizer()
 
 image_id = 0
 USE_CUDA = True
+
+
+def show_points(points_tensor):
+    prc_r_all=points_tensor[0].transpose(1, 0).contiguous().data.cpu()
+    prc_r_all_point=PointCloud()
+    prc_r_all_point.points = Vector3dVector(prc_r_all)
+    draw_geometries([prc_r_all_point])
+
 
 def main():
     
@@ -39,7 +48,7 @@ def main():
 
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
+    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
@@ -73,7 +82,8 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            latent_caps, reconstructions= capsule_net(points)
+            show_points(points)
+            reconstructions, _, _ = capsule_net(points)
                         
             for pointset_id in range(opt.batch_size):        
                 prc_r_all=reconstructions[pointset_id].transpose(1, 0).contiguous().data.cpu()
@@ -108,7 +118,7 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            latent_caps, reconstructions= capsule_net(points)
+            reconstructions, _, _ = capsule_net(points)
             for pointset_id in range(opt.batch_size):        
                 prc_r_all=reconstructions[pointset_id].transpose(1, 0).contiguous().data.cpu()
                 prc_r_all_point=PointCloud()
@@ -144,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='tmp_checkpoints/shapenet_part_dataset__64caps_64vec_70.pth', help='model path')
+    parser.add_argument('--model', type=str, default='tmp_checkpoints/shapenet_part_dataset__64caps_64vec_5.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55')
     opt = parser.parse_args()
     print(opt)

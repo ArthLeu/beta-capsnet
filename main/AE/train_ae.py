@@ -138,7 +138,6 @@ def main():
                     (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
                 torch.save(capsule_net.module.state_dict(), dict_name)  
 
-
     # training process for 'shapenet_core55'
     else:
         for epoch in range(opt.n_epochs):
