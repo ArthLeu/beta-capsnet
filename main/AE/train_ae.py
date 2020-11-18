@@ -1,12 +1,13 @@
 """beta_vae_train.py"""
 
 import argparse
+import sys
+import os
+
 import torch
 import torch.nn.parallel
 from torch.autograd import Variable
 import torch.optim as optim
-import sys
-import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../')))
@@ -40,8 +41,8 @@ def main():
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
 
     # BVAE CONFIGURATIONS HARDCODING
-    #loss_mode = 'gaussian'
-    loss_mode = 'chamfer' # was decoder_list
+    #loss_mode = 'gaussian' # loss_mode was decoder_list in bVAE
+    loss_mode = 'chamfer' 
 
     loss_objective = "H" # Higgin et al "H", or Burgess et al "B"
 
@@ -76,10 +77,10 @@ def main():
 
             optimizer.zero_grad()
             
-            # KEY PART: new train loss computation (train_loss in bVAE was beta_vae_loss)
+            # ---- CRITICAL PART: new train loss computation (train_loss in bVAE was beta_vae_loss)
             x_recon, mu, logvar = capsule_net(points) # returns x_recon, mu, logvar
-            recon_loss = reconstruction_loss(points, x_recon, loss_mode) ######### RECONSTRUCTION LOSS
-            total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar) ######### DIVERGENCE
+            recon_loss = reconstruction_loss(points, x_recon, loss_mode) # RECONSTRUCTION LOSS
+            total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar) # DIVERGENCE
 
             if loss_objective == 'H':
                 train_loss = recon_loss + beta*total_kld
@@ -87,16 +88,16 @@ def main():
                 C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
                 train_loss = recon_loss + gamma*(total_kld-C).abs()
             
-            # (original train loss computation)
+            # original train loss computation (deprecated)
             #train_loss = capsule_net.module.loss(points, x_recon)
             #train_loss.backward()
 
-            # combines per capsule loss
+            # combining per capsule loss (pyTorch requires)
             scalar_loss = train_loss.sum()
             scalar_loss.backward()
             train_loss_sum += scalar_loss
 
-            # ENDS OF KEY PART
+            # ---- END OF CRITICAL PART ----
 
             optimizer.step()
 
@@ -106,8 +107,9 @@ def main():
         print('Average train loss of epoch %d : %f' %
               (epoch, (train_loss_sum / len(train_dataloader))))
 
-        if epoch% 5 == 0:
-            dict_name=opt.outf+'/'+opt.dataset+'_dataset_'+ '_'+str(opt.latent_caps_size)+'caps_'+str(opt.latent_caps_size)+'vec_'+str(epoch)+'.pth'
+        if epoch % 5 == 0:
+            dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
+                (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
             torch.save(capsule_net.module.state_dict(), dict_name)
 
     global_iter += 1
@@ -115,6 +117,8 @@ def main():
 
 
 if __name__ == "__main__":
+
+    print("[INFO] tmp_checkpoints folder will be in your program run folder")
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
@@ -132,6 +136,6 @@ if __name__ == "__main__":
     
 
     opt = parser.parse_args()
-    print(opt)
+    print("Args:", opt)
 
     main()

@@ -8,7 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from chamfer_distance import ChamferDistance
+from chamfer_distance import ChamferDistance # https://github.com/chrdiller/pyTorchChamferDistance
 CD = ChamferDistance()
 
 
@@ -24,8 +24,7 @@ def reconstruction_loss(x, x_recon, mode):
     elif mode == 'chamfer':
         x_ = x.transpose(2, 1).contiguous()
         reconstructions_ = x_recon.transpose(2, 1).contiguous()
-        #dist1, dist2 = NND.nnd(x_, reconstructions_)
-        dist1, dist2 = CD(x_, reconstructions_)
+        dist1, dist2 = CD(x_, reconstructions_) # replaced since old torch_nndistance from yongheng ceased working
         recon_loss = (torch.mean(dist1)) + (torch.mean(dist2))
     else:
         recon_loss = None

@@ -10,6 +10,7 @@ from torch.autograd import Variable
 
 import sys, os
 
+# function definitions
 
 def reparametrize(mu, logvar):
     std = logvar.div(2).exp()
@@ -17,6 +18,30 @@ def reparametrize(mu, logvar):
     ret = mu + std*eps
     return ret
 
+
+def kaiming_init(m):
+    if isinstance(m, (nn.Linear, nn.Conv2d)):
+        init.kaiming_normal(m.weight)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
+        m.weight.data.fill_(1)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+
+
+def normal_init(m, mean, std):
+    if isinstance(m, (nn.Linear, nn.Conv2d)):
+        m.weight.data.normal_(mean, std)
+        if m.bias.data is not None:
+            m.bias.data.zero_()
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+        m.weight.data.fill_(1)
+        if m.bias.data is not None:
+            m.bias.data.zero_()
+
+
+# aux modules
 
 class View(nn.Module):
     def __init__(self, size):
@@ -26,7 +51,8 @@ class View(nn.Module):
     def forward(self, tensor):
         return tensor.view(self.size)
 
-########################## ENCODER ########################
+# encoding layers
+
 class ConvLayer(nn.Module):
     def __init__(self):
         super(ConvLayer, self).__init__()
@@ -95,7 +121,8 @@ class LatentCapsLayer(nn.Module):
         return output_tensor
 
 
-################################ DECODER ###################
+# decoding layers
+
 class PointGenCon(nn.Module):
     def __init__(self, bottleneck_size=2500):
         self.bottleneck_size = bottleneck_size
@@ -115,6 +142,7 @@ class PointGenCon(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.th(self.conv4(x))
         return x
+
 
 class CapsDecoder(nn.Module):
     def __init__(self, latent_caps_size, latent_vec_size, num_points):
@@ -137,7 +165,7 @@ class CapsDecoder(nn.Module):
         return torch.cat(outs, 2).contiguous()
 
 
-######################### COMBINED ########################
+# entirety
 
 class BetaPointCapsNet(nn.Module):
     """Model combining beta-VAE with 3D Capsnet."""
@@ -193,26 +221,6 @@ class BetaPointCapsNet(nn.Module):
         return loss 
 
 
-def kaiming_init(m):
-    if isinstance(m, (nn.Linear, nn.Conv2d)):
-        init.kaiming_normal(m.weight)
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
-        m.weight.data.fill_(1)
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-
-
-def normal_init(m, mean, std):
-    if isinstance(m, (nn.Linear, nn.Conv2d)):
-        m.weight.data.normal_(mean, std)
-        if m.bias.data is not None:
-            m.bias.data.zero_()
-    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
-        m.weight.data.fill_(1)
-        if m.bias.data is not None:
-            m.bias.data.zero_()
 
 if __name__ == '__main__':
 
@@ -220,15 +228,15 @@ if __name__ == '__main__':
     CD = ChamferDistance()
 
     USE_CUDA = True
-    batch_size=2 # ORIGINAL IS 8
+    batch_size = 2 # ORIGINAL WAS 8
     
-    prim_caps_size=1024
-    prim_vec_size=16
+    prim_caps_size = 1024
+    prim_vec_size = 16
     
-    latent_caps_size=32 # number of latent capsules
-    latent_vec_size=16 # scale of (number of neurons in) latent capsules
+    latent_caps_size = 32 # number of latent capsules
+    latent_vec_size = 16 # scale of (number of neurons in) latent capsules
     
-    num_points=2048
+    num_points = 2048
 
     point_caps_ae = BetaPointCapsNet(prim_caps_size,prim_vec_size,latent_caps_size,latent_vec_size,num_points)
     point_caps_ae=torch.nn.DataParallel(point_caps_ae).cuda()
@@ -238,13 +246,12 @@ if __name__ == '__main__':
     rand_data = rand_data.transpose(2, 1)
     rand_data = rand_data.cuda()
     
-    recon_all = point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
-    reconstruction = recon_all[0]
+    reconstruction, _, _ = point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()
     dist1, dist2 = CD(rand_data_, reconstruction_)
     loss = (torch.mean(dist1)) + (torch.mean(dist2))
-    print("model.py test loss: ",loss.item()) 
+    print("[DONE] loss: ",loss.item()) 
 
     
