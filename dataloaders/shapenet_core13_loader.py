@@ -29,7 +29,7 @@ def my_get_n_random_lines(path, n=5):
         return lines[1:n+1]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-dataset_path=os.path.abspath(os.path.join(BASE_DIR, '../dataset/shapenet_core13/'))
+dataset_path=os.path.abspath(os.path.join(BASE_DIR, '../dataset/shapenet/shapenet_core13/'))
 
 class ShapeNet(data.Dataset):
     def __init__(self, rootpc=dataset_path, class_choice=None, train=True, npoints=2500, normal=False):

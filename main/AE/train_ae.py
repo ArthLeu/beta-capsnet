@@ -21,6 +21,7 @@ from solver import kl_divergence, reconstruction_loss
 from logger import Logger
 
 USE_CUDA = True
+LOGGING = False
 
 
 def main():
@@ -41,10 +42,11 @@ def main():
         os.makedirs(opt.outf)
 
     # create folder to save logs
-    log_dir='./logs'+'/'+opt.dataset+'_dataset_'+str(opt.latent_caps_size)+'caps_'+str(opt.latent_vec_size)+'vec'+'_batch_size_'+str(opt.batch_size)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir);
-    logger = Logger(log_dir)
+    if LOGGING:
+        log_dir='./logs'+'/'+opt.dataset+'_dataset_'+str(opt.latent_caps_size)+'caps_'+str(opt.latent_vec_size)+'vec'+'_batch_size_'+str(opt.batch_size)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        logger = Logger(log_dir)
 
     # select dataset    
     if opt.dataset=='shapenet_part':
@@ -60,7 +62,7 @@ def main():
     #loss_mode = 'gaussian' # loss_mode was decoder_list in bVAE
     loss_mode = 'chamfer' 
 
-    loss_objective = "H" # Higgin et al "H", or Burgess et al "B"
+    loss_objective = "B" # Higgin et al "H", or Burgess et al "B"
 
     C_max = 25          # default 25, pending addition to args
     C_stop_iter = 1e5   # default 1e5, pending addition to args
@@ -121,14 +123,14 @@ def main():
 
                 # ---- END OF CRITICAL PART ----
                 
-                info = {'train_loss': scalar_loss.item()}
-               
-                for tag, value in info.items():
-                    logger.scalar_summary(
-                        tag, value, (len(train_dataloader) * epoch) + batch_id + 1)                
+                if LOGGING:
+                    info = {'train_loss': scalar_loss.item()}
+                    for tag, value in info.items():
+                        logger.scalar_summary(
+                            tag, value, (len(train_dataloader) * epoch) + batch_id + 1)                
               
                 if batch_id % 50 == 0:
-                    print('bactch_no:%d/%d, train_loss: %f ' %  (batch_id, len(train_dataloader), scalar_loss.item()))
+                    print('batch_no: %d / %d, train_loss: %f ' %  (batch_id, len(train_dataloader), scalar_loss.item()))
     
             print('Average train loss of epoch %d : %f' %
                   (epoch, (train_loss_sum / len(train_dataloader))))
@@ -181,18 +183,15 @@ def main():
                 optimizer.step()
                 train_loss_sum += scalar_loss
                 # ---- END OF CRITICAL PART ----       
-    
-                info = {'train_loss': scalar_loss.item()}
-                for tag, value in info.items():
-                    logger.scalar_summary(
-                        tag, value, (int(57448/opt.batch_size) * epoch) + batch_id + 1)
-                info = {'train_loss': scalar_loss.item()}
-                for tag, value in info.items():
-                    logger.scalar_summary(
-                        tag, value, (int(57448/opt.batch_size) * epoch) + batch_id + 1)
+
+                if LOGGING:
+                    info = {'train_loss': scalar_loss.item()}
+                    for tag, value in info.items():
+                        logger.scalar_summary(
+                            tag, value, (int(57448/opt.batch_size) * epoch) + batch_id + 1)
                     
                 if batch_id % 50 == 0:
-                    print('bactch_no: %d / %d at epoch %d; train_loss: %f ' %  (batch_id, int(57448/opt.batch_size),epoch,scalar_loss.item() )) # the dataset size is 57448
+                    print('batch_no: %d / %d at epoch %d; train_loss: %f ' %  (batch_id, int(57448/opt.batch_size),epoch,scalar_loss.item() )) # the dataset size is 57448
             
             print('Average train loss of epoch %d : %f' % (epoch, (train_loss_sum / int(57448/opt.batch_size))))    
 
@@ -202,7 +201,6 @@ def main():
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
                     (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
                 torch.save(capsule_net.module.state_dict(), dict_name)
-
 
 
 if __name__ == "__main__":

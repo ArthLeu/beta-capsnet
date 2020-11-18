@@ -40,7 +40,7 @@ def shuffle_points(batch_data):
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-dataset_path=os.path.abspath(os.path.join(BASE_DIR, '../dataset/shapenet_core55/shapenet57448xyzonly.npz'))
+dataset_path=os.path.abspath(os.path.join(BASE_DIR, '../dataset/shapenet/shapenet_core55/shapenet57448xyzonly.npz'))
 
 class Shapnet55Dataset(object):
     def __init__(self, filename=dataset_path, batch_size=32, npoints=1024, shuffle=True, train=False):
