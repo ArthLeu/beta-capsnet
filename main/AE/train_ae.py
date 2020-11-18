@@ -71,7 +71,7 @@ def main():
 
     gamma = 1000        # default 1000, pending addition to args
     beta = 4            # default 4, pending addition to args
-    b_weight = 100
+    b_weight = 1000     # weight assigned to beta loss against reconstruction loss (chamfer distance)
 
 
     # training process for 'shapenet_part' or 'shapenet_core13'
@@ -107,35 +107,34 @@ def main():
                 total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar) # DIVERGENCE
 
                 if loss_objective == 'H':
-                    beta_loss = beta*total_kld * b_weight
+                    beta_loss = beta*total_kld
                 elif loss_objective == 'B':
                     C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
-                    beta_loss = gamma*(total_kld-C).abs() * b_weight
+                    beta_loss = gamma*(total_kld-C).abs()
 
-                train_loss = recon_loss + beta_loss
+                train_loss = (recon_loss + beta_loss).sum()
                 
                 # original train loss computation (deprecated)
                 #train_loss = capsule_net.module.loss(points, x_recon)
                 #train_loss.backward()
 
                 # combining per capsule loss (pyTorch requires)
-                scalar_loss = train_loss.sum()
-                scalar_loss.backward()
+                train_loss.backward()
                 optimizer.step()
-                train_loss_sum += scalar_loss
-                recon_loss_sum += recon_loss
-                beta_loss_sum += beta_loss
+                train_loss_sum += train_loss
+                recon_loss_sum += recon_loss.sum()
+                beta_loss_sum += beta_loss.sum()
 
                 # ---- END OF CRITICAL PART ----
                 
                 if LOGGING:
-                    info = {'train_loss': scalar_loss.item()}
+                    info = {'train_loss': train_loss.item()}
                     for tag, value in info.items():
                         logger.scalar_summary(
                             tag, value, (len(train_dataloader) * epoch) + batch_id + 1)                
               
                 if batch_id % 50 == 0:
-                    print('batch_no: %d / %d, train_loss: %f ' %  (batch_id, len(train_dataloader), scalar_loss.item()))
+                    print('batch_no: %d / %d, train_loss: %f ' %  (batch_id, len(train_dataloader), train_loss.item()))
     
             print('Average train loss of epoch %d : %f' %\
                 (epoch, (train_loss_sum / len(train_dataloader))))
@@ -180,17 +179,19 @@ def main():
                 total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar)
 
                 if loss_objective == 'H':
-                    train_loss = recon_loss + beta*total_kld * b_weight
+                    beta_loss = beta*total_kld
                 elif loss_objective == 'B':
                     C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
-                    train_loss = recon_loss + gamma*(total_kld-C).abs() * b_weight
+                    beta_loss = gamma*(total_kld-C).abs() 
 
-                scalar_loss = train_loss.sum()
-                scalar_loss.backward()
+                #weighted_beta_loss = beta_loss * b_weight
+                train_loss = (recon_loss + beta_loss).sum()
+
+                train_loss.backward()
                 optimizer.step()
-                train_loss_sum += scalar_loss
-                recon_loss_sum += recon_loss
-                beta_loss_sum += beta_loss
+                train_loss_sum += train_loss
+                recon_loss_sum += recon_loss.sum()
+                beta_loss_sum += beta_loss.sum()
                 # ---- END OF CRITICAL PART ----       
 
                 if LOGGING:
@@ -205,7 +206,7 @@ def main():
             print('Average train loss of epoch %d : %f' % \
                 (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
             print("Average reconstruction loss: %f, beta loss: %f" % \
-                (recon_loss_sum / len(train_dataloader), beta_loss_sum / len(train_dataloader)) )
+                (recon_loss_sum / int(57448/opt.batch_size), beta_loss_sum / int(57448/opt.batch_size)) )
 
             train_dataset.reset()
 
