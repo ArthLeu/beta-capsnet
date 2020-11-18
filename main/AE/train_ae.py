@@ -140,7 +140,7 @@ def main():
             print('Average train loss of epoch %d : %f' %\
                 (epoch, (train_loss_sum / len(train_dataloader))))
             print("Average reconstruction loss: %f, beta loss: %f"%\
-                (recon_loss_sum, beta_loss_sum))
+                (recon_loss_sum / len(train_dataloader), beta_loss_sum / len(train_dataloader)) )
 
             if epoch% 5 == 0:
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
@@ -205,11 +205,11 @@ def main():
             print('Average train loss of epoch %d : %f' % \
                 (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
             print("Average reconstruction loss: %f, beta loss: %f" % \
-                (recon_loss_sum, beta_loss_sum)) 
+                (recon_loss_sum / len(train_dataloader), beta_loss_sum / len(train_dataloader)) )
 
             train_dataset.reset()
 
-            if epoch% 5 == 0:
+            if epoch % 5 == 0:
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
                     (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
                 torch.save(capsule_net.module.state_dict(), dict_name)
