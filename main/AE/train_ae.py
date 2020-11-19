@@ -71,7 +71,7 @@ def main():
 
     gamma = 1000        # default 1000, pending addition to args
     beta = 4            # default 4, pending addition to args
-    b_weight = 1000     # weight assigned to beta loss against reconstruction loss (chamfer distance)
+    w_beta = 0.5        # weight assigned to beta loss against reconstruction loss (chamfer distance)
 
 
     # training process for 'shapenet_part' or 'shapenet_core13'
@@ -112,9 +112,8 @@ def main():
                     C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
                     beta_loss = gamma*(total_kld-C).abs()
 
-                train_loss = (recon_loss + beta_loss).sum()
-                recon_loss_sum += recon_loss.sum().item()
-                beta_loss_sum += beta_loss.sum().item()
+                # weighted sum of losses
+                train_loss = ((1-w_beta) * recon_loss + w_beta * beta_loss).sum() # WEIGHTED LOSS
                 
                 # original train loss computation (deprecated)
                 #train_loss = capsule_net.module.loss(points, x_recon)
@@ -124,6 +123,8 @@ def main():
                 train_loss.backward()
                 optimizer.step()
                 train_loss_sum += train_loss.item()
+                recon_loss_sum += recon_loss.item()
+                beta_loss_sum += beta_loss.sum().item()
 
                 # ---- END OF CRITICAL PART ----
                 
@@ -138,8 +139,8 @@ def main():
     
             print('Average train loss of epoch %d : %f' %\
                 (epoch, (train_loss_sum / len(train_dataloader))))
-            print("Average reconstruction loss: %f, beta loss: %f"%\
-                (recon_loss_sum / len(train_dataloader), beta_loss_sum / len(train_dataloader)) )
+            print("Average reconstruction loss (1e2x): %f, beta loss (1e4x): %f"%\
+                (recon_loss_sum * 100 / len(train_dataloader), beta_loss_sum * 10000 / len(train_dataloader)) )
 
             if epoch% 5 == 0:
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
@@ -184,13 +185,12 @@ def main():
                     C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
                     beta_loss = gamma*(total_kld-C).abs() 
 
-                #weighted_beta_loss = beta_loss * b_weight
-                train_loss = (recon_loss + beta_loss).sum()
+                train_loss = ((1-w_beta) * recon_loss + w_beta * beta_loss).sum()
 
                 train_loss.backward()
                 optimizer.step()
                 train_loss_sum += train_loss.item()
-                recon_loss_sum += recon_loss.sum().item()
+                recon_loss_sum += recon_loss.item()
                 beta_loss_sum += beta_loss.sum().item()
                 # ---- END OF CRITICAL PART ----       
 
@@ -205,8 +205,8 @@ def main():
             
             print('Average train loss of epoch %d : %f' % \
                 (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
-            print("Average reconstruction loss: %f, beta loss: %f" % \
-                (recon_loss_sum / int(57448/opt.batch_size), beta_loss_sum / int(57448/opt.batch_size)) )
+            print("Average reconstruction loss (1e2x): %f, beta loss (1e4x): %f" % \
+                (recon_loss_sum * 100 / int(57448/opt.batch_size), beta_loss_sum * 10000 / int(57448/opt.batch_size)) )
 
             train_dataset.reset()
 
