@@ -79,11 +79,11 @@ def main():
     if 'train_dataloader' in locals().keys() :
         for epoch in range(opt.n_epochs):
             if epoch < 50:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.0001)
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.001) # one more 0 in original lr
             elif epoch<150:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.00001)
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.0001)
             else:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.000001)
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.00001)
 
             #capsule_net.train()
             train_loss_sum, recon_loss_sum, beta_loss_sum = 0, 0, 0

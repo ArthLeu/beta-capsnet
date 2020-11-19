@@ -47,7 +47,7 @@ def main():
 
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
+    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')
     parser.add_argument('--latent_caps_size', type=int, default=64, help='number of latent caps')
-    parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
+    parser.add_argument('--latent_vec_size', type=int, default=32, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
     parser.add_argument('--model', type=str, default='tmp_checkpoints/shapenet_part_dataset__64caps_64vec_5.pth', help='model path')
