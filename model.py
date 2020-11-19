@@ -101,7 +101,6 @@ class LatentCapsLayer(nn.Module):
         self.W = nn.Parameter(0.01*torch.randn(latent_caps_size, prim_caps_size, latent_vec_size, prim_vec_size))
 
     def forward(self, x): # https://pechyonkin.me/capsules-3/
-        print(x.size(), "xize")
         u_hat = torch.squeeze(torch.matmul(self.W, x[:, None, :, :, None]), dim=-1)
         u_hat_detached = u_hat.detach()
         b_ij = Variable(torch.zeros(x.size(0), self.latent_caps_size, self.prim_caps_size)).cuda()
@@ -113,9 +112,7 @@ class LatentCapsLayer(nn.Module):
             else:
                 v_j = self.squash(torch.sum(c_ij[:, :, :, None] * u_hat_detached, dim=-2, keepdim=True))
                 b_ij = b_ij + torch.sum(v_j * u_hat_detached, dim=-1)
-        ret = v_j.squeeze(-2)
-        print(ret.size(), "retsize")
-        return ret
+        return v_j.squeeze(-2)
     
     def squash(self, input_tensor):
         squared_norm = (input_tensor ** 2).sum(-1, keepdim=True)
@@ -192,7 +189,6 @@ class BetaPointCapsNet(nn.Module):
 
     def forward(self, x):
         distributions = self._encode(x) # distribution makes sense when capsule vector size is 1
-        print(distributions.size(), "distsize")
         mu = distributions[:, :self.latent_caps_size, :] # saves mean values to first half of latent capsules
         logvar = distributions[:, self.latent_caps_size:, :] # saves logvar values to second half of latent capsules
         #mu = distributions[:, :self.latent_vec_size]
@@ -205,7 +201,6 @@ class BetaPointCapsNet(nn.Module):
     def _encode(self, x):
         x1 = self.conv_layer(x)
         x2 = self.primary_point_caps_layer(x1)
-        print(x2.size(), "x2size")
         latent_capsules = self.latent_caps_layer(x2)
         return latent_capsules
 
