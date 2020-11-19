@@ -82,7 +82,7 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            show_points(points) # temporary
+            #show_points(points) # temporary
             reconstructions, _, _ = capsule_net(points)
                         
             for pointset_id in range(opt.batch_size):        

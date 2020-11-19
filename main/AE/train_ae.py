@@ -21,13 +21,13 @@ from solver import kl_divergence, reconstruction_loss
 from logger import Logger
 
 USE_CUDA = True
-LOGGING = False
+LOGGING = True
 
 
 def main():
     USE_CUDA = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_caps_size, opt.num_points)
+    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
