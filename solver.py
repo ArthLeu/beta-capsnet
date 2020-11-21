@@ -23,6 +23,7 @@ def reconstruction_loss(x, x_recon, mode):
         recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
     elif mode == 'chamfer':
         x_ = x.transpose(2, 1).contiguous()
+        x_recon = F.sigmoid(x_recon) # [TEMP] attempt to correct messy output
         reconstructions_ = x_recon.transpose(2, 1).contiguous()
         dist1, dist2 = CD(x_, reconstructions_) # replaced since old torch_nndistance from yongheng ceased working
         recon_loss = (torch.mean(dist1)) + (torch.mean(dist2))
