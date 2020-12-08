@@ -22,7 +22,7 @@ def reconstruction_loss(x, x_recon, mode):
         x_recon = torch.sigmoid(x_recon)
         recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
     elif mode == 'mse':
-        recon_loss = F.mse_loss(x_recon, x, size_average=False).div(batch_size)
+        recon_loss = F.mse_loss(x_recon, x).div(batch_size)
     elif mode == 'chamfer':
         x_ = x.transpose(2, 1).contiguous()
         reconstructions_ = x_recon.transpose(2, 1).contiguous()
@@ -35,13 +35,7 @@ def reconstruction_loss(x, x_recon, mode):
 
 
 def kl_divergence(mu, logvar):
-    batch_size = mu.size(0)
-    assert batch_size != 0
-    if mu.data.ndimension() == 4:
-        mu = mu.view(mu.size(0), mu.size(1))
-    if logvar.data.ndimension() == 4:
-        logvar = logvar.view(logvar.size(0), logvar.size(1))
-
+    """ compute the KL Divergence from given mean and variance """
     klds = -0.5*(1 + logvar - mu.pow(2) - logvar.exp())
     total_kld = klds.sum(1).mean(0, True)
     dimension_wise_kld = klds.mean(0)

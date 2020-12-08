@@ -77,7 +77,7 @@ def main():
     # training process for 'shapenet_part' or 'shapenet_core13'
     #capsule_net.train()
     if 'train_dataloader' in locals().keys() :
-        for epoch in range(opt.n_epochs):
+        for epoch in range(opt.n_epochs+1):
             if epoch < 50:
                 optimizer = optim.Adam(capsule_net.parameters(), lr=0.01)
             elif epoch<150:
@@ -105,7 +105,7 @@ def main():
                 x_recon, latent_caps, caps_recon, logvar = capsule_net(points) # returns x_recon, latent_caps, caps_recon, logvar
                 recon_loss = reconstruction_loss(points, x_recon, "chamfer") # RECONSTRUCTION LOSS
                 caps_loss = reconstruction_loss(latent_caps, caps_recon, "mse")
-                total_kld, dim_wise_kld, mean_kld = kl_divergence(latent_caps, logvar) # DIVERGENCE
+                total_kld, _, _ = kl_divergence(latent_caps, logvar) # DIVERGENCE
 
                 if loss_objective == 'H':
                     beta_loss = beta*total_kld
@@ -115,7 +115,7 @@ def main():
 
                 # sum of losses
                 beta_total_loss = beta_loss.sum()
-                train_loss = recon_loss #+ caps_loss + beta_loss  # LOSS (can be weighted)
+                train_loss = 0.75 * recon_loss + 0.125 * caps_loss + 0.125 * beta_total_loss # LOSS (can be weighted)
                 
                 # original train loss computation (deprecated)
                 #train_loss = capsule_net.module.loss(points, x_recon)
@@ -149,7 +149,7 @@ def main():
 
     # training process for 'shapenet_core55'
     else:
-        for epoch in range(opt.n_epochs):
+        for epoch in range(opt.n_epochs+1):
             if epoch < 20:
                 optimizer = optim.Adam(capsule_net.parameters(), lr=0.001)
             elif epoch<50:
