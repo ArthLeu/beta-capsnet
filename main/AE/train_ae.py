@@ -75,17 +75,17 @@ def main():
 
 
     # training process for 'shapenet_part' or 'shapenet_core13'
-    capsule_net.train()
+    #capsule_net.train()
     if 'train_dataloader' in locals().keys() :
         for epoch in range(opt.n_epochs):
             if epoch < 50:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.001) # one more 0 in original lr
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.01)
             elif epoch<150:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.0001)
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.001)
             else:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.00001)
+                optimizer = optim.Adam(capsule_net.parameters(), lr=0.0001)
 
-            #capsule_net.train()
+            capsule_net.train()
             train_loss_sum, recon_loss_sum, beta_loss_sum = 0, 0, 0
 
             for batch_id, data in enumerate(train_dataloader):
@@ -102,9 +102,10 @@ def main():
                 optimizer.zero_grad()
                 
                 # ---- CRITICAL PART: new train loss computation (train_loss in bVAE was beta_vae_loss)
-                x_recon, mu, logvar = capsule_net(points) # returns x_recon, mu, logvar
-                recon_loss = reconstruction_loss(points, x_recon, loss_mode) # RECONSTRUCTION LOSS
-                total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar) # DIVERGENCE
+                x_recon, latent_caps, caps_recon, logvar = capsule_net(points) # returns x_recon, latent_caps, caps_recon, logvar
+                recon_loss = reconstruction_loss(points, x_recon, "chamfer") # RECONSTRUCTION LOSS
+                caps_loss = reconstruction_loss(latent_caps, caps_recon, "mse")
+                total_kld, dim_wise_kld, mean_kld = kl_divergence(latent_caps, logvar) # DIVERGENCE
 
                 if loss_objective == 'H':
                     beta_loss = beta*total_kld
@@ -112,8 +113,9 @@ def main():
                     C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
                     beta_loss = gamma*(total_kld-C).abs()
 
-                # weighted sum of losses
-                train_loss = ((1-w_beta) * recon_loss + w_beta * beta_loss).sum() # WEIGHTED LOSS
+                # sum of losses
+                beta_total_loss = beta_loss.sum()
+                train_loss = recon_loss #+ caps_loss + beta_loss  # LOSS (can be weighted)
                 
                 # original train loss computation (deprecated)
                 #train_loss = capsule_net.module.loss(points, x_recon)
@@ -123,13 +125,13 @@ def main():
                 train_loss.backward()
                 optimizer.step()
                 train_loss_sum += train_loss.item()
-                recon_loss_sum += recon_loss.item()
-                beta_loss_sum += beta_loss.sum().item()
 
                 # ---- END OF CRITICAL PART ----
                 
                 if LOGGING:
-                    info = {'train_loss': train_loss.item()}
+                    info = {'recon_loss': recon_loss.item(),\
+                        'beta_loss': beta_total_loss.item(),
+                        'capsule_loss': caps_loss.item()}
                     for tag, value in info.items():
                         logger.scalar_summary(
                             tag, value, (len(train_dataloader) * epoch) + batch_id + 1)                
@@ -137,10 +139,8 @@ def main():
                 if batch_id % 50 == 0:
                     print('batch_no: %d / %d, train_loss: %f ' %  (batch_id, len(train_dataloader), train_loss.item()))
     
-            print('Average train loss of epoch %d : %f' %\
+            print('\nAverage train loss of epoch %d : %f\n' %\
                 (epoch, (train_loss_sum / len(train_dataloader))))
-            print("Average reconstruction loss (1e2x): %f, beta loss (1e4x): %f"%\
-                (recon_loss_sum * 100 / len(train_dataloader), beta_loss_sum * 10000 / len(train_dataloader)) )
 
             if epoch% 5 == 0:
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
@@ -205,7 +205,7 @@ def main():
             
             print('Average train loss of epoch %d : %f' % \
                 (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
-            print("Average reconstruction loss (1e2x): %f, beta loss (1e4x): %f" % \
+            print("Average reconstruction loss (10x): %f, beta loss (1e4x): %f" % \
                 (recon_loss_sum * 100 / int(57448/opt.batch_size), beta_loss_sum * 10000 / int(57448/opt.batch_size)) )
 
             train_dataset.reset()
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
-    parser.add_argument('--n_epochs', type=int, default=300, help='number of epochs to train for')
+    parser.add_argument('--n_epochs', type=int, default=50, help='number of epochs to train for')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')

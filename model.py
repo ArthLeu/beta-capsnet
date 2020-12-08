@@ -15,8 +15,7 @@ import sys, os
 def reparametrize(mu, logvar):
     std = logvar.div(2).exp()
     eps = Variable(std.data.new(std.size()).normal_())
-    ret = mu + std*eps
-    return ret
+    return mu + std*eps
 
 
 def kaiming_init(m):
@@ -112,7 +111,7 @@ class LatentCapsLayer(nn.Module):
             else:
                 v_j = self.squash(torch.sum(c_ij[:, :, :, None] * u_hat_detached, dim=-2, keepdim=True))
                 b_ij = b_ij + torch.sum(v_j * u_hat_detached, dim=-1)
-        return v_j.squeeze(-2)
+        return v_j.squeeze(-2) # removes given dimension if size is 1
     
     def squash(self, input_tensor):
         squared_norm = (input_tensor ** 2).sum(-1, keepdim=True)
@@ -121,7 +120,42 @@ class LatentCapsLayer(nn.Module):
         return output_tensor
 
 
+class CapsuleVAE(nn.Module):
+    """Model proposed in original beta-VAE paper(Higgins et al, ICLR, 2017)."""
+
+    def __init__(self, latent_vec_size):
+        super(CapsuleVAE, self).__init__()
+        self.z_dim = latent_vec_size
+        #self.fc_mu = nn.Linear(latent_vec_size, self.z_dim)
+        self.fc_var = nn.Linear(latent_vec_size, self.z_dim)
+
+        self.decoder = nn.Linear(self.z_dim, latent_vec_size)
+
+        self.weight_init()
+
+    def weight_init(self):
+        for m in self._modules:
+            kaiming_init(m)
+            #for m in self._modules[block]:
+            #    kaiming_init(m)
+
+    def forward(self, x):
+        mu = x
+        logvar = self.fc_var(x)
+        z = reparametrize(mu, logvar)
+        
+        capsule_recon = self._decode(z) # x_reconstructed
+
+        return capsule_recon, logvar
+
+    def _encode(self, x):
+        return self.encoder(x)
+
+    def _decode(self, z):
+        return self.decoder(z)
+
 # decoding layers
+
 
 class PointGenCon(nn.Module):
     def __init__(self, bottleneck_size=2500):
@@ -176,51 +210,27 @@ class BetaPointCapsNet(nn.Module):
         # encoder
         self.conv_layer = ConvLayer()
         self.primary_point_caps_layer = PrimaryPointCapsLayer(prim_vec_size, num_points)
-        self.latent_caps_layer = LatentCapsLayer(latent_caps_size * 2, prim_caps_size, prim_vec_size, latent_vec_size) # times 2 since we need mu and logvar for VAE
+        #self.latent_caps_layer = LatentCapsLayer(latent_caps_size * 2, prim_caps_size, prim_vec_size, latent_vec_size) # times 2 since we need mu and logvar for VAE
+        self.latent_caps_layer = LatentCapsLayer(latent_caps_size, prim_caps_size, prim_vec_size, latent_vec_size)
+        self.Z = CapsuleVAE(latent_vec_size)
         # decoder
         self.caps_decoder = CapsDecoder(latent_caps_size,latent_vec_size, num_points)
 
-        #self.weight_init()
-
-    def weight_init(self):
-        for block in self._modules:
-            for m in self._modules[block]:
-                kaiming_init(m)
-
     def forward(self, x):
-        distributions = self._encode(x) # distribution makes sense when capsule vector size is 1
-        mu = distributions[:, :self.latent_caps_size, :] # saves mean values to first half of latent capsules
-        logvar = distributions[:, self.latent_caps_size:, :] # saves logvar values to second half of latent capsules
-        #mu = distributions[:, :self.latent_vec_size]
-        #logvar = distributions[:, self.latent_vec_size:]
-        z = reparametrize(mu, logvar)
-        x_recon = self._decode(z).view(x.size()) # x_reconstructed
-
-        return x_recon, mu, logvar
+        latent_caps, caps_recon, logvar = self._encode(x) # distribution makes sense when capsule vector size is 1
+        x_recon = self._decode(caps_recon).view(x.size()) # x_reconstructed
+        return (x_recon, latent_caps, caps_recon, logvar)
 
     def _encode(self, x):
         x1 = self.conv_layer(x)
         x2 = self.primary_point_caps_layer(x1)
-        latent_capsules = self.latent_caps_layer(x2)
-        return latent_capsules
+        latent_caps = self.latent_caps_layer(x2)
+        caps_recon, logvar = self.Z(latent_caps)
+        return latent_caps, caps_recon, logvar
 
-    def _decode(self, z):
-        ''' z is equivalent to latent capsules '''
-        reconstructions = self.caps_decoder(z)
+    def _decode(self, caps_recon):
+        reconstructions = self.caps_decoder(caps_recon)
         return reconstructions
-
-    def loss(self, data, reconstructions):
-        return self.NRL(data, reconstructions)
-
-    def NRL(self, data, reconstructions):
-        ''' naive reconstruction loss '''
-        data_ = data.transpose(2, 1).contiguous()
-        reconstructions_ = reconstructions.transpose(2, 1).contiguous()
-        dist1, dist2 = NND.nnd(data_, reconstructions_)
-        loss = (torch.mean(dist1)) + (torch.mean(dist2))
-        return loss 
-
-
 
 if __name__ == '__main__':
 
@@ -234,7 +244,7 @@ if __name__ == '__main__':
     prim_vec_size = 16
     
     latent_caps_size = 32 # number of latent capsules
-    latent_vec_size = 16 # scale of (number of neurons in) latent capsules
+    latent_vec_size = 16  # scale of (number of neurons in) latent capsules
     
     num_points = 2048
 
@@ -246,7 +256,7 @@ if __name__ == '__main__':
     rand_data = rand_data.transpose(2, 1)
     rand_data = rand_data.cuda()
     
-    reconstruction, _, _ = point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
+    reconstruction = point_caps_ae(rand_data)[0] # what forward() function returns, e.g. x_recon, mu, logvar
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()

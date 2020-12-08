@@ -29,7 +29,8 @@ USE_CUDA = True
 
 
 def show_points(points_tensor):
-    prc_r_all=points_tensor[0].transpose(1, 0).contiguous().data.cpu()
+    print("W: Showing 1 training input, not output")
+    prc_r_all=points_tensor.transpose(1, 0).contiguous().data.cpu()
     prc_r_all_point=PointCloud()
     prc_r_all_point.points = Vector3dVector(prc_r_all)
     draw_geometries([prc_r_all_point])
@@ -82,10 +83,11 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            #show_points(points) # temporary
-            reconstructions, _, _ = capsule_net(points)
+            reconstructions = capsule_net(points)[0]
                         
-            for pointset_id in range(opt.batch_size):        
+            for pointset_id in range(opt.batch_size):
+                show_points(points[pointset_id]) # temporary
+
                 prc_r_all=reconstructions[pointset_id].transpose(1, 0).contiguous().data.cpu()
                 prc_r_all_point=PointCloud()
                 prc_r_all_point.points = Vector3dVector(prc_r_all)        
