@@ -14,7 +14,7 @@ import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
 
-from model import BetaPointCapsNet
+from model import BetaPointCapsNet, PointCapsNet
 from open3d import *
 import matplotlib.pyplot as plt
 
@@ -48,7 +48,8 @@ def main():
 
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
+    #capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
+    capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
@@ -83,7 +84,8 @@ def main():
             points = points.transpose(2, 1)
             if USE_CUDA:
                 points = points.cuda()
-            reconstructions = capsule_net(points)[0]
+            #reconstructions = capsule_net(points)[0]
+            _, reconstructions = capsule_net(points)
                         
             for pointset_id in range(opt.batch_size):
                 show_points(points[pointset_id]) # temporary

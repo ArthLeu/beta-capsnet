@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
-from model import BetaPointCapsNet
+from model import BetaPointCapsNet, PointCapsNet
 from solver import kl_divergence, reconstruction_loss
 from logger import Logger
 
@@ -27,7 +27,8 @@ LOGGING = True
 def main():
     USE_CUDA = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
+    #capsule_net = BetaPointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
+    capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
   
     if opt.model != '':
         capsule_net.load_state_dict(torch.load(opt.model))
@@ -102,23 +103,25 @@ def main():
                 optimizer.zero_grad()
                 
                 # ---- CRITICAL PART: new train loss computation (train_loss in bVAE was beta_vae_loss)
-                x_recon, latent_caps, caps_recon, logvar = capsule_net(points) # returns x_recon, latent_caps, caps_recon, logvar
+                #x_recon, latent_caps, caps_recon, logvar = capsule_net(points) # returns x_recon, latent_caps, caps_recon, logvar
+                latent_capsules, x_recon = capsule_net(points)
                 recon_loss = reconstruction_loss(points, x_recon, "chamfer") # RECONSTRUCTION LOSS
-                caps_loss = reconstruction_loss(latent_caps, caps_recon, "mse")
-                total_kld, _, _ = kl_divergence(latent_caps, logvar) # DIVERGENCE
+                #caps_loss = reconstruction_loss(latent_caps, caps_recon, "mse")
+                #total_kld, _, _ = kl_divergence(latent_caps, logvar) # DIVERGENCE
 
-                if loss_objective == 'H':
-                    beta_loss = beta*total_kld
-                elif loss_objective == 'B':
-                    C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
-                    beta_loss = gamma*(total_kld-C).abs()
+                #if loss_objective == 'H':
+                #    beta_loss = beta * total_kld
+                #elif loss_objective == 'B':
+                #    C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
+                #    beta_loss = gamma*(total_kld-C).abs()
 
                 # sum of losses
-                beta_total_loss = beta_loss.sum()
-                train_loss = 0.75 * recon_loss + 0.125 * caps_loss + 0.125 * beta_total_loss # LOSS (can be weighted)
+                #beta_total_loss = beta_loss.sum()
+                #train_loss = 0.7 * recon_loss + 0.2 * caps_loss + 0.1 * beta_total_loss # LOSS (can be weighted)
                 
-                # original train loss computation (deprecated)
+                # original train loss computation
                 #train_loss = capsule_net.module.loss(points, x_recon)
+                train_loss = recon_loss
                 #train_loss.backward()
 
                 # combining per capsule loss (pyTorch requires)
@@ -129,9 +132,7 @@ def main():
                 # ---- END OF CRITICAL PART ----
                 
                 if LOGGING:
-                    info = {'recon_loss': recon_loss.item(),\
-                        'beta_loss': beta_total_loss.item(),
-                        'capsule_loss': caps_loss.item()}
+                    info = {'train loss': train_loss.item()}
                     for tag, value in info.items():
                         logger.scalar_summary(
                             tag, value, (len(train_dataloader) * epoch) + batch_id + 1)                
@@ -145,9 +146,9 @@ def main():
             if epoch% 5 == 0:
                 dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
                     (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
-                torch.save(capsule_net.module.state_dict(), dict_name)  
+                torch.save(capsule_net.module.state_dict(), dict_name)
 
-    # training process for 'shapenet_core55'
+    # training process for 'shapenet_core55' (NOT UP-TO-DATE)
     else:
         for epoch in range(opt.n_epochs+1):
             if epoch < 20:

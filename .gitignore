@@ -10,3 +10,4 @@ dataset
 tmp_checkpoints
 exp
 logs
+tmp*

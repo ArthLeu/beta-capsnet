@@ -120,40 +120,6 @@ class LatentCapsLayer(nn.Module):
         return output_tensor
 
 
-class CapsuleVAE(nn.Module):
-    """Model proposed in original beta-VAE paper(Higgins et al, ICLR, 2017)."""
-
-    def __init__(self, latent_vec_size):
-        super(CapsuleVAE, self).__init__()
-        self.z_dim = latent_vec_size
-        #self.fc_mu = nn.Linear(latent_vec_size, self.z_dim)
-        self.fc_var = nn.Linear(latent_vec_size, self.z_dim)
-
-        self.decoder = nn.Linear(self.z_dim, latent_vec_size)
-
-        self.weight_init()
-
-    def weight_init(self):
-        for m in self._modules:
-            kaiming_init(m)
-            #for m in self._modules[block]:
-            #    kaiming_init(m)
-
-    def forward(self, x):
-        mu = x
-        logvar = self.fc_var(x)
-        z = reparametrize(mu, logvar)
-        
-        capsule_recon = self._decode(z) # x_reconstructed
-
-        return capsule_recon, logvar
-
-    def _encode(self, x):
-        return self.encoder(x)
-
-    def _decode(self, z):
-        return self.decoder(z)
-
 # decoding layers
 
 
@@ -231,6 +197,61 @@ class BetaPointCapsNet(nn.Module):
     def _decode(self, caps_recon):
         reconstructions = self.caps_decoder(caps_recon)
         return reconstructions
+
+
+class PointCapsNet(nn.Module):
+    ''' original Point Capsnet by Zhao et. al.'''
+    def __init__(self, prim_caps_size, prim_vec_size, latent_caps_size, latent_vec_size, num_points):
+        super(PointCapsNet, self).__init__()
+        self.conv_layer = ConvLayer()
+        self.primary_point_caps_layer = PrimaryPointCapsLayer(prim_vec_size, num_points)
+        self.latent_caps_layer = LatentCapsLayer(latent_caps_size, prim_caps_size, prim_vec_size, latent_vec_size)
+        self.caps_decoder = CapsDecoder(latent_caps_size,latent_vec_size, num_points)
+
+    def forward(self, data):
+        x1 = self.conv_layer(data)
+        x2 = self.primary_point_caps_layer(x1)
+        latent_capsules = self.latent_caps_layer(x2)
+        reconstructions = self.caps_decoder(latent_capsules)
+        return latent_capsules, reconstructions
+        
+
+class CapsuleBVAE(nn.Module):
+    """Model proposed in original beta-VAE paper(Higgins et al, ICLR, 2017)."""
+
+    def __init__(self, latent_vec_size):
+        super(CapsuleBVAE, self).__init__()
+        self.z_dim = latent_vec_size
+        self.fc_mu = nn.Linear(latent_vec_size, self.z_dim)
+        self.fc_var = nn.Linear(latent_vec_size, self.z_dim)
+
+        self.decoder = nn.Linear(self.z_dim, latent_vec_size)
+
+        self.weight_init()
+
+    def weight_init(self):
+        for m in self._modules:
+            kaiming_init(m)
+            #for m in self._modules[block]:
+            #    kaiming_init(m)
+
+    def forward(self, caps):
+        #mu = x
+        mu = self.fc_mu(caps)
+        logvar = self.fc_var(caps)
+        z = reparametrize(mu, logvar)
+        
+        caps_recon = self._decode(z) # x_reconstructed
+
+        return caps_recon, mu, logvar
+
+    def _encode(self, x):
+        return self.encoder(x)
+
+    def _decode(self, z):
+        return self.decoder(z)
+
+
 
 if __name__ == '__main__':
 
