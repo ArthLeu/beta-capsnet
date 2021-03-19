@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
-from model import BetaPointCapsNet, PointCapsNet
+from model import PointCapsNet
 from solver import kl_divergence, reconstruction_loss
 from logger import Logger
 
@@ -222,12 +222,12 @@ if __name__ == "__main__":
     print("[INFO] tmp_checkpoints folder will be in your program run folder")
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=16, help='input batch size')
     parser.add_argument('--n_epochs', type=int, default=50, help='number of epochs to train for')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')
-    parser.add_argument('--latent_caps_size', type=int, default=64, help='number of latent caps')
+    parser.add_argument('--latent_caps_size', type=int, default=32, help='number of latent caps')
     parser.add_argument('--latent_vec_size', type=int, default=32, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')

@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import pickle
 
 import torch
 import torch.nn.parallel
@@ -14,25 +15,16 @@ sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
-from model import BetaPointCapsNet, PointCapsNet
+from model import PointCapsNet
 from solver import kl_divergence, reconstruction_loss
 
 USE_CUDA = True
 LOGGING = True
-CLASS = "Table"
-DATA_COUNT = 0
-
-def save_batch_latents(latent_capsules):
-    batch_size = opt.batch_size
-    for i in range(batch_size):
-        lc = latent_capsules[i, :]
-        global DATA_COUNT
-        if DATA_COUNT > 0 and DATA_COUNT % 50 == 0: print(DATA_COUNT)
-        torch.save(lc, "tmp_lcs/latcaps_%s_%03d.pt"%(CLASS.lower(), DATA_COUNT))
-        DATA_COUNT += 1
 
 
-def main():
+def main(CLASS="None"):
+    if CLASS == "None": exit()
+
     USE_CUDA = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     capsule_net = PointCapsNet(opt.prim_caps_size, opt.prim_vec_size, opt.latent_caps_size, opt.latent_vec_size, opt.num_points)
@@ -63,12 +55,15 @@ def main():
         dataset = modelnet40_loader.ModelNetH5Dataset(batch_size=opt.batch_size, npoints=opt.num_points, shuffle=True, train=opt.save_training)
 
 
-#  process for 'shapenet_part' or 'shapenet_core13'
+    #  process for 'shapenet_part' or 'shapenet_core13'
     capsule_net.eval()
+    
+    count = 0
+
     if 'dataloader' in locals().keys() :
         test_loss_sum = 0
         for batch_id, data in enumerate(dataloader):
-            points, cls_label= data
+            points, _ = data
             if(points.size(0)<opt.batch_size):
                 break
             points = Variable(points)
@@ -77,7 +72,10 @@ def main():
                 points = points.cuda()
             latent_caps, _ = capsule_net(points)
 
-            save_batch_latents(latent_caps)
+            for i in range(opt.batch_size):
+                torch.save(latent_caps[i,:], "tmp_lcs/latcaps_%s_%03d.pt"%(CLASS.lower(), count))
+                count += 1
+                if (count+1) % 50 == 0: print(count+1)
     
     else:
         pass
@@ -85,19 +83,25 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=4, help='input batch size')
     parser.add_argument('--n_epochs', type=int, default=300, help='number of epochs to train for')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')
     parser.add_argument('--latent_caps_size', type=int, default=64, help='number of latent caps')
-    parser.add_argument('--latent_vec_size', type=int, default=32, help='scale of latent caps')
+    parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default="tmp_checkpoints/shapenet_part_dataset_64caps_32vec_10.pth", help='model path')
+    parser.add_argument('--model', type=str, default="checkpoints/shapenet_part_dataset_ae_200.pth", help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelnet40')
     parser.add_argument('--save_training', help='save the output latent caps of training data or test data', action='store_true')
     opt = parser.parse_args()
     print(opt)
-    main()
+
+    f = open("classes.pickle", "rb")
+    d = pickle.load(f)
+    classes = list(d.keys())
+    
+    for c in classes:
+        main(c)
 

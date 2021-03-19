@@ -14,9 +14,12 @@ import shapenet_part_loader
 import shapenet_core13_loader
 import shapenet_core55_loader
 
-from model import BetaPointCapsNet, PointCapsNet
+from model import PointCapsNet
 from open3d import *
 import matplotlib.pyplot as plt
+
+from chamfer_distance import ChamferDistance
+CD = ChamferDistance()
 
 ## MONKEY PATCHING
 PointCloud = geometry.PointCloud
@@ -29,7 +32,6 @@ USE_CUDA = True
 
 
 def show_points(points_tensor):
-    print("W: Showing 1 training input, not output")
     prc_r_all=points_tensor.transpose(1, 0).contiguous().data.cpu()
     prc_r_all_point=PointCloud()
     prc_r_all_point.points = Vector3dVector(prc_r_all)
@@ -63,7 +65,7 @@ def main():
 
     
     if opt.dataset=='shapenet_part':
-        test_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='test')
+        test_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='test', class_choice="Skateboard")
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
     elif opt.dataset=='shapenet_core13':
         test_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=False)
@@ -73,6 +75,7 @@ def main():
 
 
     capsule_net.eval()
+    count = 0
     # test process for shapenet_part 
     if 'test_dataloader' in locals().keys() :
         test_loss_sum = 0
@@ -85,10 +88,21 @@ def main():
             if USE_CUDA:
                 points = points.cuda()
             #reconstructions = capsule_net(points)[0]
-            _, reconstructions = capsule_net(points)
+            latent_capsules, reconstructions = capsule_net(points)
+            print("latent caps shape:", latent_capsules.shape)
+            recon2 = capsule_net.module.caps_decoder(latent_capsules)
+            
+            
+            dist1, dist2 = CD(reconstructions, recon2)
+            loss = (torch.mean(dist1)) + (torch.mean(dist2))
+            print("CD:", loss.item())
                         
             for pointset_id in range(opt.batch_size):
+                print("showing raw data")
                 show_points(points[pointset_id]) # temporary
+                print("showing recon2")
+                show_points(recon2[pointset_id])
+
 
                 prc_r_all=reconstructions[pointset_id].transpose(1, 0).contiguous().data.cpu()
                 prc_r_all_point=PointCloud()
@@ -105,7 +119,8 @@ def main():
                         jc+=1
                     else:
                         pcd_list[j].paint_uniform_color([0.8,0.8,0.8])
-                    colored_re_pointcloud+=pcd_list[j]        
+                    colored_re_pointcloud+=pcd_list[j]
+                print("showing recolored pcl")        
                 draw_geometries([colored_re_pointcloud])
 
     
@@ -148,16 +163,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--n_epochs', type=int, default=300, help='number of epochs to train for')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')
     parser.add_argument('--latent_caps_size', type=int, default=64, help='number of latent caps')
-    parser.add_argument('--latent_vec_size', type=int, default=32, help='scale of latent caps')
+    parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='tmp_checkpoints/shapenet_part_dataset__64caps_64vec_5.pth', help='model path')
+    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55')
     opt = parser.parse_args()
     print(opt)

@@ -167,38 +167,6 @@ class CapsDecoder(nn.Module):
 
 # entirety
 
-class BetaPointCapsNet(nn.Module):
-    """Model combining beta-VAE with 3D Capsnet."""
-
-    def __init__(self, prim_caps_size, prim_vec_size, latent_caps_size, latent_vec_size, num_points):
-        super(BetaPointCapsNet, self).__init__()
-        self.latent_caps_size = latent_caps_size
-        # encoder
-        self.conv_layer = ConvLayer()
-        self.primary_point_caps_layer = PrimaryPointCapsLayer(prim_vec_size, num_points)
-        #self.latent_caps_layer = LatentCapsLayer(latent_caps_size * 2, prim_caps_size, prim_vec_size, latent_vec_size) # times 2 since we need mu and logvar for VAE
-        self.latent_caps_layer = LatentCapsLayer(latent_caps_size, prim_caps_size, prim_vec_size, latent_vec_size)
-        self.Z = CapsuleVAE(latent_vec_size)
-        # decoder
-        self.caps_decoder = CapsDecoder(latent_caps_size,latent_vec_size, num_points)
-
-    def forward(self, x):
-        latent_caps, caps_recon, logvar = self._encode(x) # distribution makes sense when capsule vector size is 1
-        x_recon = self._decode(caps_recon).view(x.size()) # x_reconstructed
-        return (x_recon, latent_caps, caps_recon, logvar)
-
-    def _encode(self, x):
-        x1 = self.conv_layer(x)
-        x2 = self.primary_point_caps_layer(x1)
-        latent_caps = self.latent_caps_layer(x2)
-        caps_recon, logvar = self.Z(latent_caps)
-        return latent_caps, caps_recon, logvar
-
-    def _decode(self, caps_recon):
-        reconstructions = self.caps_decoder(caps_recon)
-        return reconstructions
-
-
 class PointCapsNet(nn.Module):
     ''' original Point Capsnet by Zhao et. al.'''
     def __init__(self, prim_caps_size, prim_vec_size, latent_caps_size, latent_vec_size, num_points):
@@ -216,34 +184,58 @@ class PointCapsNet(nn.Module):
         return latent_capsules, reconstructions
         
 
+
 class CapsuleBVAE(nn.Module):
     """Model proposed in original beta-VAE paper(Higgins et al, ICLR, 2017)."""
 
-    def __init__(self, latent_vec_size):
+    def __init__(self, z_dim=10, nc=1):
         super(CapsuleBVAE, self).__init__()
-        self.z_dim = latent_vec_size
-        self.fc_mu = nn.Linear(latent_vec_size, self.z_dim)
-        self.fc_var = nn.Linear(latent_vec_size, self.z_dim)
-
-        self.decoder = nn.Linear(self.z_dim, latent_vec_size)
+        self.z_dim = z_dim
+        self.nc = nc #number of channels
+        self.encoder = nn.Sequential(
+            nn.Conv2d(nc, 32, 4, 2, 1),          # B,  32, 32, 32
+            nn.ReLU(True),
+            nn.Conv2d(32, 32, 4, 2, 1),          # B,  32, 16, 16
+            nn.ReLU(True),
+            nn.Conv2d(32, 64, 4, 2, 1),          # B,  64,  8,  8
+            nn.ReLU(True),
+            nn.Conv2d(64, 64, 4, 2, 1),          # B,  64,  4,  4
+            nn.ReLU(True),
+            nn.Conv2d(64, 256, 4, 1),            # B, 256,  1,  1
+            nn.ReLU(True),
+            View((-1, 256*1*1)),                 # B, 256
+            nn.Linear(256, z_dim*2),             # B, z_dim*2
+        )
+        self.decoder = nn.Sequential(
+            nn.Linear(z_dim, 256),               # B, 256
+            View((-1, 256, 1, 1)),               # B, 256,  1,  1
+            nn.ReLU(True),
+            nn.ConvTranspose2d(256, 64, 4),      # B,  64,  4,  4
+            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 64, 4, 2, 1), # B,  64,  8,  8
+            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 32, 4, 2, 1), # B,  32, 16, 16
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32, 32, 32
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, nc, 4, 2, 1),  # B, nc, 64, 64
+        )
 
         self.weight_init()
 
     def weight_init(self):
-        for m in self._modules:
-            kaiming_init(m)
-            #for m in self._modules[block]:
-            #    kaiming_init(m)
+        for block in self._modules:
+            for m in self._modules[block]:
+                kaiming_init(m)
 
-    def forward(self, caps):
-        #mu = x
-        mu = self.fc_mu(caps)
-        logvar = self.fc_var(caps)
+    def forward(self, x):
+        distributions = self._encode(x)
+        mu = distributions[:, :self.z_dim]
+        logvar = distributions[:, self.z_dim:]
         z = reparametrize(mu, logvar)
-        
-        caps_recon = self._decode(z) # x_reconstructed
+        x_recon = self._decode(z) # x_reconstructed
 
-        return caps_recon, mu, logvar
+        return x_recon, mu, logvar
 
     def _encode(self, x):
         return self.encoder(x)
@@ -253,13 +245,15 @@ class CapsuleBVAE(nn.Module):
 
 
 
+
+
 if __name__ == '__main__':
 
     from chamfer_distance import ChamferDistance
     CD = ChamferDistance()
 
     USE_CUDA = True
-    batch_size = 2 # ORIGINAL WAS 8
+    batch_size = 16 # ORIGINAL WAS 8
     
     prim_caps_size = 1024
     prim_vec_size = 16
@@ -269,7 +263,7 @@ if __name__ == '__main__':
     
     num_points = 2048
 
-    point_caps_ae = BetaPointCapsNet(prim_caps_size,prim_vec_size,latent_caps_size,latent_vec_size,num_points)
+    point_caps_ae = PointCapsNet(prim_caps_size,prim_vec_size,latent_caps_size,latent_vec_size,num_points)
     point_caps_ae=torch.nn.DataParallel(point_caps_ae).cuda()
     
     rand_data = torch.rand(batch_size,num_points, 3) 
@@ -277,7 +271,7 @@ if __name__ == '__main__':
     rand_data = rand_data.transpose(2, 1)
     rand_data = rand_data.cuda()
     
-    reconstruction = point_caps_ae(rand_data)[0] # what forward() function returns, e.g. x_recon, mu, logvar
+    _, reconstruction = point_caps_ae(rand_data) # what forward() function returns, e.g. x_recon, mu, logvar
 
     rand_data_ = rand_data.transpose(2, 1).contiguous()
     reconstruction_ = reconstruction.transpose(2, 1).contiguous()
