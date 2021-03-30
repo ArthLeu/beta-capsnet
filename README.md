@@ -7,6 +7,15 @@ Created by <a href="http://campar.in.tum.de/Main/YongHengZhao" target="_blank">Y
 
 See <a href="https://github.com/yongheng1991/3D-point-capsule-networks" target="_blank">this link</a> for original README documentation
 
+Custom functions: 
+1. generate capsule dataset for transfer learning, 
+2. train beta-vae with capsules, 
+3. decode and visualize capsules using default capsnet checkpoint
+
+#### Chamfer Distance Package
+Since the default CD package is extremely buggy, we switched to a new CD package provided by chrdiller.
+Link: https://github.com/chrdiller/pyTorchChamferDistance
+
 
 ### Installation
 
@@ -18,13 +27,6 @@ Install h5py for Python:
   sudo apt-get install libhdf5-dev
   sudo pip install h5py
 ```
-
-Install Chamfer Distance(CD) package:
-```bash
-  cd reference_models/pcl_models/torch_nndistance
-  python3 build.py install
-```
-
 
 To visualize the training process in PyTorch, consider installing  <a href="https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard" target="_blank">TensorBoard</a>.
 
@@ -97,62 +99,4 @@ e.g.
   python viz_reconstruction.py --dataset shapenet_core13 --model ../../checkpoints/shapenet_core13_dataset_ae_230.pth
 ```
 
-#### Transfer Learning and Semi Supervised Classification
 
-To generate latent capsules from a pre-trained model and save them into a file:
-```bash
-  cd apps/trasfer_cls
-  python save_output_latent_caps_in_file.py --dataset < >  --model < >  --save_training  # process and save training dataset
-  python save_output_latent_caps_in_file.py --dataset < >  --model < >   # process and save testing dataset
-```
-To train and test the liner SVM classifier with the pre-trained AE model and pre-saved latent capsules:
-```bash
-  python train_and_test_svm_cls_from_pre-saved_latent_caps.py --dataset < >  --model < >
-```
-The AE model and latent capsules are obtained from different datasets in order to test the performance of classification under transfer.
-
-Training a Liner SVM classifier with a limited part of the training data and testing with the complete test data:
-```bash
-  python train_and_test_svm_cls_from_pre-saved_latent_caps.py --dataset < >  --model < > --percent_training_dataset < 5, 10 ...>
-e.g.
-  python train_and_test_svm_cls_from_pre-saved_latent_caps.py --dataset shapenet_part  --model ../../checkpoints/shapenet_part_dataset_ae_200.pth --percent_training_dataset 10
-```
-
-#### Part Segmentation
-To generate latent capsules with the part label from a pre-trained model and save them into a file (The model is also trained with shapenet-part dataset):
-```bash
-  cd apps/part_seg
-  python save_output_latent_caps_with_part_label.py --dataset shapenet_part  --model < >  --save_training  # process and save training dataset
-  python save_output_latent_caps_with_part_label.py --dataset shapenet_part  --model < >   # process and save testing dataset
-```
-To train a capsule-wise part segmentation with a specific amount of training data:
-```bash
-  python train_seg.py --model < > --percent_training_dataset < 5, 10 ...>
-e.g.
-  python train_seg.py --model ../../checkpoints/shapenet_part_dataset_ae_200.pth --percent_training_dataset 1
- ```
-To evaluate and visualize the part segmentation:
- (--model < pre-trained model of point capsule auto encoder >;
- --part_model <pre-trained model of part segmentation >)
-          
- ```bash
-  python eva_seg.py --model < >  --part_model < > --class_choice < >
-e.g.
-  python eva_seg.py --model ../../checkpoints/shapenet_part_dataset_ae_200.pth  --part_model ../../checkpoints/part_seg_1percent.pth  --class_choice Airplane
-  ```
-
-#### Part Interpolation and Replacement
-To visualize the part interpolation in open3D:
- ```bash
-  python part_interplation.py --model < >  --part_model < > --class_choice < >
-e.g.
-  python part_interplation.py --model ../../checkpoints/shapenet_part_dataset_ae_200.pth  --part_model ../../checkpoints/part_seg_100percent.pth  --class_choice Airplane
- ```
-
-To visualize the part replacement in open3D:
- ```bash
-  python part_replacement.py --model < >  --part_model < > --class_choice < >
- ```
-
-#### 3D Local Feature Extraction
-to be continued...
