@@ -12,6 +12,10 @@ Custom functions:
 2. train beta-vae with capsules, 
 3. decode and visualize capsules using default capsnet checkpoint
 
+#### Chamfer Distance Package
+Since the default CD package is extremely buggy, we switched to a new CD package provided by chrdiller.
+Link: https://github.com/chrdiller/pyTorchChamferDistance
+
 
 ### Installation
 
