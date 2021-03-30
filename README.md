@@ -28,13 +28,6 @@ Install h5py for Python:
   sudo pip install h5py
 ```
 
-Install Chamfer Distance(CD) package:
-```bash
-  cd reference_models/pcl_models/torch_nndistance
-  python3 build.py install
-```
-
-
 To visualize the training process in PyTorch, consider installing  <a href="https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/04-utils/tensorboard" target="_blank">TensorBoard</a>.
 
 If you have GUI enabled, to visualize the reconstructed point cloud, consider installing <a href="http://www.open3d.org/docs/getting_started.html" target="_blank">Open3D</a>.
