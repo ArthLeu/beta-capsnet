@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import os
 import FrEIA.framework as Ff
 import FrEIA.modules as Fm
 
@@ -8,10 +9,14 @@ class DataLoader(object):
     train_set = {}
     test_set = {}
     start_pos = 0
-    train_size = 339
 
-    def __init__(self, device):
+    def __init__(self, device, dir_capsules, base_filename, N_DIM):
         self.device = device
+        self.dir_capsules = dir_capsules
+        self.base_filename = base_filename
+        self.N_DIM = N_DIM
+        self.train_size = len([name for name in os.listdir(dir_capsules) if os.path.isfile(os.path.join(dir_capsules, name))])
+        print("Found", self.train_size, "capsules in the directory")
 
     def next_batch(self, batch_size):
         start = self.start_pos
@@ -25,9 +30,9 @@ class DataLoader(object):
             start = 0
             end = self.train_size + 1
 
-        batch_set = torch.zeros([0, 64*64], device=self.device)
+        batch_set = torch.zeros([0, self.N_DIM], device=self.device)
         for i in range(start, end):
-            latent_filename = "/home/fz261/Repository/beta-capsnet/dataset/latent_capsules/airplane/latcaps_airplane_%03d.pt"%i
+            latent_filename = os.path.join(self.dir_capsules, self.base_filename + "_%03d.pt"%i)
             # print(latent_filename)
             slc = torch.load(latent_filename)
             slc = slc.to(self.device)
