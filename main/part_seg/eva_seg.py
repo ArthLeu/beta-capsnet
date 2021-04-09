@@ -18,13 +18,12 @@ import os
 import numpy as np
 import statistics
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import shapenet_part_loader
 import matplotlib.pyplot as plt
 
-from pointcapsnet_ae import PointCapsNet
-from capsule_seg_net import CapsSegNet
+from model import PointCapsNet, CapsSegNet
 
 #import h5py
 from sklearn.svm import LinearSVC
@@ -33,6 +32,15 @@ import json
 
 from open3d import *
 
+## MONKEY PATCHING
+PointCloud = geometry.PointCloud
+Vector3dVector = utility.Vector3dVector
+draw_geometries = visualization.draw_geometries
+viz = visualization.Visualizer()
+KDTreeFlann = geometry.KDTreeFlann
+
+
+
 def main():
     blue = lambda x:'\033[94m' + x + '\033[0m'
     cat_no={'Airplane': 0, 'Bag': 1, 'Cap': 2, 'Car': 3, 'Chair': 4, 'Earphone': 5, 
@@ -40,7 +48,7 @@ def main():
             'Mug': 11, 'Pistol': 12, 'Rocket': 13, 'Skateboard': 14, 'Table': 15}    
     
 #generate part label one-hot correspondence from the catagory:
-    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset'))
+    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset/shapenet/'))
     oid2cpid_file_name=os.path.join(dataset_main_path, opt.dataset,'shapenetcore_partanno_segmentation_benchmark_v0/shapenet_part_overallid_to_catid_partid.json')        
     oid2cpid = json.load(open(oid2cpid_file_name, 'r'))   
     object2setofoid = {}
