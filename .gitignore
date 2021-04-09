@@ -11,3 +11,4 @@ tmp_checkpoints
 exp
 logs
 tmp*
+*.pt
