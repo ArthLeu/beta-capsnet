@@ -46,7 +46,8 @@ def main():
         pcd_list.append(pcd_)
     colors = plt.cm.tab20((np.arange(20)).astype(int))    
     #random selected viz capsules
-    hight_light_caps=[np.random.randint(0, opt.latent_caps_size) for r in range(10)]
+    #hight_light_caps=[np.random.randint(0, opt.latent_caps_size) for r in range(20)]
+    hight_light_caps= [i for i in range(20)]
 
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -114,8 +115,9 @@ def main():
                     for m in range(int(opt.num_points/opt.latent_caps_size)):
                         current_patch[m,]=prc_r_all[opt.latent_caps_size*m+j,] # the reconstructed patch of the capsule m is not saved continuesly in the output reconstruction.
                     pcd_list[j].points = Vector3dVector(current_patch)
-                    if (j in hight_light_caps):
-                        pcd_list[j].paint_uniform_color([colors[jc,0], colors[jc,1], colors[jc,2]])
+                    print(j%20)
+                    if (j%20 in hight_light_caps):
+                        pcd_list[j].paint_uniform_color([colors[jc%20,0], colors[jc%20,1], colors[jc%20,2]])
                         jc+=1
                     else:
                         pcd_list[j].paint_uniform_color([0.8,0.8,0.8])
@@ -148,11 +150,11 @@ def main():
                     for m in range(int(opt.num_points/opt.latent_caps_size)):
                         current_patch[m,]=prc_r_all[opt.latent_caps_size*m+j,] # the reconstructed patch of the capsule m is not saved continuesly in the output reconstruction.
                     pcd_list[j].points = Vector3dVector(current_patch)
-                    if (j in hight_light_caps):
-                        pcd_list[j].paint_uniform_color([colors[jc,0], colors[jc,1], colors[jc,2]])
-                        jc+=1
-                    else:
-                        pcd_list[j].paint_uniform_color([0.8,0.8,0.8])
+                    #if (j in hight_light_caps):
+                    #    pcd_list[j].paint_uniform_color([colors[jc,0], colors[jc,1], colors[jc,2]])
+                    #    jc+=1
+                    #else:
+                    #    pcd_list[j].paint_uniform_color([0.8,0.8,0.8])
                     colored_re_pointcloud+=pcd_list[j]
         
                 draw_geometries([colored_re_pointcloud])

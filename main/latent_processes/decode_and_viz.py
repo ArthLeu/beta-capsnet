@@ -15,6 +15,9 @@ import shapenet_core13_loader
 import shapenet_core55_loader
 
 from model import PointCapsNet
+import segmentation as seg
+
+
 from open3d import *
 import matplotlib.pyplot as plt
 
@@ -32,7 +35,7 @@ USE_CUDA = True
 
 
 def show_points(points_tensor):
-    print("showing tensor of shape", points_tensor.size())
+    #print("showing tensor of shape", points_tensor.size())
     prc_r_all=points_tensor.transpose(1, 0).contiguous().data.cpu()
     prc_r_all_point=PointCloud()
     prc_r_all_point.points = Vector3dVector(prc_r_all)
@@ -59,12 +62,19 @@ def main():
 
         latent_filename = "tmp_lcs/cbvae_latcaps_airplane_%03d.pt"%i
         #latent_filename = "/mnt/massdisk/dataset/latent_capsules/airplane/latcaps_airplane_000.pt"
-        print(latent_filename)
-        slc = torch.load(latent_filename)
+        print("[INFO] Opening", latent_filename)
+        slc = torch.load(latent_filename) # single latent capsule
         if slc.dim() == 2: slc = slc.unsqueeze(0)
         
-        recon1 = capsule_net.module.caps_decoder(slc)
-        show_points(recon1[0])
+        reconstruction = capsule_net.module.caps_decoder(slc)
+        
+        print("[INFO] Showing raw reconstruction.")
+        show_points(reconstruction[0])
+
+        print("[INFO] Showing reconstruction with part segmentation.")
+        seg.seg_and_viz(slc, reconstruction)
+
+        break # only showing single latent capsule
 
 
 if __name__ == "__main__":

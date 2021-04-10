@@ -105,6 +105,7 @@ def main():
     for batch_id, data in enumerate(train_dataloader):
 
         points, part_label, cls_label= data        
+        print(part_label.shape) # each point has a part label (e.g. wing, engine, tail)
         if not (opt.class_choice==None ):
             cls_label[:]= cat_no[opt.class_choice]
     
@@ -132,7 +133,11 @@ def main():
         expand =cur_label_one_hot.unsqueeze(2).expand(opt.batch_size, 16, opt.latent_caps_size).transpose(1,2)
         expand,latent_caps=Variable(expand),Variable(latent_caps)
         expand,latent_caps=expand.cuda(),latent_caps.cuda()
+        print(expand.shape)
+        print(latent_caps.shape, "before concat")
         latent_caps=torch.cat((latent_caps,expand),2)
+        print(latent_caps.shape, "after concat")
+
       
         # predict the part class per capsule
         latent_caps=latent_caps.transpose(2, 1)
@@ -143,13 +148,18 @@ def main():
             mini = torch.min(output[i,:,:])
             output[i,:, non_cat_labels] = mini - 1000   
         pred_choice = output.data.cpu().max(2)[1]
+
+        print(pred_choice.shape)
+        print(pred_choice[0,:])
+        exit()
        
-        # assign predicted the capsule part label to its reconstructed point patch
+        # assign predicted capsule part label to its reconstructed point patch
         reconstructions_part_label=torch.zeros([opt.batch_size,opt.num_points],dtype=torch.int64)
         for i in range(opt.batch_size):
-            for j in range(opt.latent_caps_size):
-                for m in range(int(opt.num_points/opt.latent_caps_size)):
+            for j in range(opt.latent_caps_size): # subdivisions of points from each latent cap
+                for m in range(opt.num_points//opt.latent_caps_size): # all points in each subdivision
                     reconstructions_part_label[i,opt.latent_caps_size*m+j]=pred_choice[i,j]
+
 
         
         # assign the part label from the reconstructed point cloud to the input point set with NN
