@@ -1,5 +1,6 @@
 shapenet_*/*
 shapenet_*
+!utils/shapenet_initiation.zip
 
 checkpoints/*
 checkpoints
