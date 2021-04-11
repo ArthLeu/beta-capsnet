@@ -21,14 +21,14 @@ from sklearn.svm import LinearSVC
 import json
 
 
-from open3d import *
+import open3d as o3d
 
 ## MONKEY PATCHING
-PointCloud = geometry.PointCloud
-Vector3dVector = utility.Vector3dVector
-draw_geometries = visualization.draw_geometries
-viz = visualization.Visualizer()
-KDTreeFlann = geometry.KDTreeFlann
+PointCloud = o3d.geometry.PointCloud
+Vector3dVector = o3d.utility.Vector3dVector
+draw_geometries = o3d.visualization.draw_geometries
+viz = o3d.visualization.Visualizer()
+KDTreeFlann = o3d.geometry.KDTreeFlann
 
 
 LATENT_CAPS_SIZE = 64
@@ -78,9 +78,12 @@ def seg_and_viz(latent_caps, reconstructions):
     #capsule_net=capsule_net.eval()
  
     
-# load the model for capsule wised part segmentation      
+# load the model for capsule wised part segmentation
+    PART_SEG_MODEL_PATH = "checkpoints/part_seg_100percent.pth"
+    print(PART_SEG_MODEL_PATH)
+
     caps_seg_net = CapsSegNet(latent_caps_size=LATENT_CAPS_SIZE, latent_vec_size=LATENT_VEC_SIZE , num_classes=50)    
-    caps_seg_net.load_state_dict(torch.load("checkpoints/part_seg_100percent.pth"))
+    caps_seg_net.load_state_dict(torch.load(PART_SEG_MODEL_PATH))
     caps_seg_net = caps_seg_net.cuda()
     caps_seg_net = caps_seg_net.eval()    
     

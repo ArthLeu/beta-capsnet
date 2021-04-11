@@ -18,17 +18,17 @@ from model import PointCapsNet
 import segmentation as seg
 
 
-from open3d import *
+import open3d as o3d
 import matplotlib.pyplot as plt
 
 from chamfer_distance import ChamferDistance
 CD = ChamferDistance()
 
 ## MONKEY PATCHING
-PointCloud = geometry.PointCloud
-Vector3dVector = utility.Vector3dVector
-draw_geometries = visualization.draw_geometries
-viz = visualization.Visualizer()
+PointCloud = o3d.geometry.PointCloud
+Vector3dVector = o3d.utility.Vector3dVector
+draw_geometries = o3d.visualization.draw_geometries
+viz = o3d.visualization.Visualizer()
 
 image_id = 0
 USE_CUDA = True
@@ -40,6 +40,7 @@ def show_points(points_tensor):
     prc_r_all_point=PointCloud()
     prc_r_all_point.points = Vector3dVector(prc_r_all)
     draw_geometries([prc_r_all_point])
+
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -60,10 +61,10 @@ def main():
 
     for i in range(opt.batch_size):
 
-        latent_filename = "tmp_lcs/cbvae_latcaps_airplane_%03d.pt"%i
-        #latent_filename = "/mnt/massdisk/dataset/latent_capsules/airplane/latcaps_airplane_000.pt"
-        print("[INFO] Opening", latent_filename)
-        slc = torch.load(latent_filename) # single latent capsule
+        LATENT_FILENAME = "tmp_lcs/cbvae_latcaps_airplane_%03d.pt"%i
+
+        print("[INFO] Opening", LATENT_FILENAME)
+        slc = torch.load(LATENT_FILENAME) # single latent capsule
         if slc.dim() == 2: slc = slc.unsqueeze(0)
         
         reconstruction = capsule_net.module.caps_decoder(slc)
