@@ -1,10 +1,17 @@
 shapenet_*/*
 shapenet_*
+
 checkpoints/*
 checkpoints
+
 __pycache__
+
 dataset/*
 dataset
+!dataset/shapenet/*.txt
+!dataset/shapenet/*.sh
+!dataset/shapenet/*.json
+
 .vscode/*
 .vscode
 tmp_checkpoints
