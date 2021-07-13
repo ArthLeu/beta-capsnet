@@ -148,10 +148,6 @@ def main():
             mini = torch.min(output[i,:,:])
             output[i,:, non_cat_labels] = mini - 1000   
         pred_choice = output.data.cpu().max(2)[1]
-
-        print(pred_choice.shape)
-        print(pred_choice[0,:])
-        exit()
        
         # assign predicted capsule part label to its reconstructed point patch
         reconstructions_part_label=torch.zeros([opt.batch_size,opt.num_points],dtype=torch.int64)
@@ -222,8 +218,8 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--part_model', type=str, default='../../checkpoints/part_seg_1percent.pth', help='model path for the pre-trained part segmentation network')
-    parser.add_argument('--model', type=str, default='../../checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
+    parser.add_argument('--part_model', type=str, default='checkpoints/part_seg_1percent.pth', help='model path for the pre-trained part segmentation network')
+    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelent40')
     parser.add_argument('--n_classes', type=int, default=50, help='part classes in all the catagories')
     parser.add_argument('--class_choice', type=str, default='Airplane', help='choose the class to eva')

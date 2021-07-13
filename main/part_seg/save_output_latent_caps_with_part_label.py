@@ -15,13 +15,24 @@ import torch.optim as optim
 import sys
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 
 import shapenet_part_loader
 from open3d import *
 
-from pointcapsnet_ae import PointCapsNet
+from model import PointCapsNet
+
+## MONKEY PATCHING
+PointCloud = geometry.PointCloud
+Vector3dVector = utility.Vector3dVector
+draw_geometries = visualization.draw_geometries
+viz = visualization.Visualizer()
+KDTreeFlann = geometry.KDTreeFlann
+
+
+CLASS_CHOICE = "Airplane"
+
 
 def main():
     USE_CUDA = True
@@ -41,20 +52,20 @@ def main():
             split='train'
         else :
             split='test'            
-        dataset = shapenet_part_loader.PartDataset(classification=False, npoints=opt.num_points, split=split)
+        dataset = shapenet_part_loader.PartDataset(classification=False, npoints=opt.num_points, split=split, class_choice=CLASS_CHOICE)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
         
 # init saving process
     pcd = PointCloud() 
     data_size=0
-    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset'))
-    out_file_path=os.path.join(dataset_main_path, opt.dataset,'latent_caps')
+    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR))
+    out_file_path=os.path.join(dataset_main_path, "../../dataset/zhao/latent_capsules/")
     if not os.path.exists(out_file_path):
         os.makedirs(out_file_path);   
     if opt.save_training:
-        out_file_name=out_file_path+"/saved_train_with_part_label.h5"
+        out_file_name=out_file_path+"/saved_train_with_part_label_%s.h5"%(CLASS_CHOICE.lower())
     else:
-        out_file_name=out_file_path+"/saved_test_with_part_label.h5"        
+        out_file_name=out_file_path+"/saved_test_with_part_label_%s.h5"%(CLASS_CHOICE.lower())        
     if os.path.exists(out_file_name):
         os.remove(out_file_name)
     fw = h5py.File(out_file_name, 'w', libver='latest')
@@ -129,10 +140,10 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='../AE/tmp_checkpoints/shapenet_part_dataset__64caps_64vec_70.pth', help='model path')
+    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='It has to be shapenet part')
-#    parser.add_argument('--save_training', type=bool, default=True, help='save the output latent caps of training data or test data')
-    parser.add_argument('--save_training', help='save the output latent caps of training data or test data', action='store_true')
+    parser.add_argument('--save_training', type=bool, default=True, help='save the output latent caps of training data or test data')
+    #parser.add_argument('--save_training', help='save the output latent caps of training data or test data', action='store_true')
 
     parser.add_argument('--n_classes', type=int, default=16, help='catagories of current dataset')
 

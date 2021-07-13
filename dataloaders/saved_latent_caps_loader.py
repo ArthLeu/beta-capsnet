@@ -14,17 +14,17 @@ dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../dataset/'))
 
 
 class Saved_latent_caps_loader(object):
-    def __init__(self, dataset, batch_size=32, npoints=1024, with_seg=False, shuffle=True, train=False,resized=False):
+    def __init__(self, dataset, h5path, batch_size=32, npoints=1024, with_seg=False, shuffle=True, train=False,resized=False):
         if(with_seg):
             if train:
-                self.h5_file=os.path.join(dataset_main_path,dataset,'latent_caps',"saved_train_with_part_label.h5")
+                self.h5_file = os.path.join(h5path,"saved_train_with_part_label_airplane.h5")
             else:
-                self.h5_file=os.path.join(dataset_main_path,dataset,'latent_caps',"saved_test_with_part_label.h5")
+                self.h5_file=os.path.join(h5path,"saved_test_with_part_label_airplane.h5")
         else:
             if train:
-                self.h5_file=os.path.join(dataset_main_path,dataset,'latent_caps',"saved_train_wo_part_label.h5")
+                self.h5_file=os.path.join(h5path,"saved_train_wo_part_label.h5")
             else:
-                self.h5_file=os.path.join(dataset_main_path,dataset,'latent_caps',"saved_test_wo_part_label.h5")
+                self.h5_file=os.path.join(h5path,"saved_test_wo_part_label.h5")
 
         if(resized):
             self.h5_file=self.h5_file+'_resized.h5'
@@ -119,9 +119,9 @@ class Saved_latent_caps_loader(object):
     
     
     def load_h5(self, h5_filename):
-        f = h5py.File(h5_filename)
-        data = f['data'][:]
-        cls_label = f['cls_label'][:]
+        f = h5py.File(h5_filename, "r")
+        data = f["data"][:]
+        cls_label = f["cls_label"][:]
       
         if self.with_seg:
             part_label = f['part_label'][:]
@@ -133,9 +133,17 @@ class Saved_latent_caps_loader(object):
 
 if __name__ == '__main__':
     
-    d = Saved_latent_caps_loader('/home/zhao/Code/dataset/pointnet_data/modelnet40_ply_hdf5_2048/')
-    print(d.shuffle)
-    print(d.has_next_batch())
-    ps_batch, cls_batch = d.next_batch(True)
-    print(ps_batch.shape)
-    print(cls_batch.shape)
+    #d = Saved_latent_caps_loader('/home/zhao/Code/dataset/pointnet_data/modelnet40_ply_hdf5_2048/')
+    #print(d.shuffle)
+    #print(d.has_next_batch())
+    #ps_batch, cls_batch = d.next_batch(True)
+    #print(ps_batch.shape)
+    #print(cls_batch.shape)
+
+    h5_filename = "/home/ry/Documents/pcl-master/dataset/zhao/latent_capsules/saved_test_with_part_label.h5"
+    f = h5py.File(h5_filename, "r")
+    print(f)
+    data = f['data'][:]
+    cls_label = f['cls_label'][:]
+    print(type(data), type(cls_label))
+    print("DONE")

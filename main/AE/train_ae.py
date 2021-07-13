@@ -22,6 +22,7 @@ from logger import Logger
 
 USE_CUDA = True
 LOGGING = True
+CLASS_CHOICE = "Airplane"
 
 
 def main():
@@ -51,10 +52,10 @@ def main():
 
     # select dataset    
     if opt.dataset=='shapenet_part':
-        train_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='train')
+        train_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='train', class_choice=CLASS_CHOICE)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
     elif opt.dataset=='shapenet_core13':
-        train_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=True)
+        train_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=True, class_choice=CLASS_CHOICE)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
     elif opt.dataset=='shapenet_core55':
         train_dataset = shapenet_core55_loader.Shapnet55Dataset(batch_size=opt.batch_size, npoints=opt.num_points, shuffle=True, train=True)
@@ -106,23 +107,7 @@ def main():
                 #x_recon, latent_caps, caps_recon, logvar = capsule_net(points) # returns x_recon, latent_caps, caps_recon, logvar
                 latent_capsules, x_recon = capsule_net(points)
                 recon_loss = reconstruction_loss(points, x_recon, "chamfer") # RECONSTRUCTION LOSS
-                #caps_loss = reconstruction_loss(latent_caps, caps_recon, "mse")
-                #total_kld, _, _ = kl_divergence(latent_caps, logvar) # DIVERGENCE
-
-                #if loss_objective == 'H':
-                #    beta_loss = beta * total_kld
-                #elif loss_objective == 'B':
-                #    C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
-                #    beta_loss = gamma*(total_kld-C).abs()
-
-                # sum of losses
-                #beta_total_loss = beta_loss.sum()
-                #train_loss = 0.7 * recon_loss + 0.2 * caps_loss + 0.1 * beta_total_loss # LOSS (can be weighted)
-                
-                # original train loss computation
-                #train_loss = capsule_net.module.loss(points, x_recon)
                 train_loss = recon_loss
-                #train_loss.backward()
 
                 # combining per capsule loss (pyTorch requires)
                 train_loss.backward()
@@ -222,13 +207,13 @@ if __name__ == "__main__":
     print("[INFO] tmp_checkpoints folder will be in your program run folder")
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=16, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
     parser.add_argument('--n_epochs', type=int, default=50, help='number of epochs to train for')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
     parser.add_argument('--prim_vec_size', type=int, default=16, help='scale of primary point caps')
-    parser.add_argument('--latent_caps_size', type=int, default=32, help='number of latent caps')
-    parser.add_argument('--latent_vec_size', type=int, default=32, help='scale of latent caps')
+    parser.add_argument('--latent_caps_size', type=int, default=64, help='number of latent caps')
+    parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
     parser.add_argument('--outf', type=str, default='tmp_checkpoints', help='output folder')

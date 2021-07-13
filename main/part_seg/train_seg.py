@@ -18,13 +18,12 @@ import sys
 import os
 import numpy as np
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../models')))
+sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../')))
 sys.path.append(os.path.abspath(os.path.join(BASE_DIR, '../../dataloaders')))
 import saved_latent_caps_loader
 
 
-from pointcapsnet_ae import PointCapsNet
-from capsule_seg_net import CapsSegNet
+from model import PointCapsNet, CapsSegNet
 
 import h5py
 from sklearn.svm import LinearSVC
@@ -33,7 +32,7 @@ import json
 
 def ResizeDataset(percentage, n_classes, shuffle):
     dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset'))
-    ori_file_name=os.path.join(dataset_main_path, opt.dataset,'latent_caps','saved_train_with_part_label.h5')           
+    ori_file_name=os.path.join(dataset_main_path, 'zhao/latent_capsules/saved_train_with_part_label.h5')           
     out_file_name=ori_file_name+"_resized.h5"
     if os.path.exists(out_file_name):
         os.remove(out_file_name)
@@ -91,7 +90,7 @@ def main():
     blue = lambda x:'\033[94m' + x + '\033[0m'
     
 #generate part label one-hot correspondence from the catagory:
-    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset'))
+    dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset/shapenet/'))
     oid2cpid_file_name=os.path.join(dataset_main_path, opt.dataset,'shapenetcore_partanno_segmentation_benchmark_v0/shapenet_part_overallid_to_catid_partid.json')        
     oid2cpid = json.load(open(oid2cpid_file_name, 'r'))   
     object2setofoid = {}
@@ -116,10 +115,13 @@ def main():
         ResizeDataset( percentage=opt.percent_training_dataset, n_classes=16,shuffle=True)
         data_resized=True
    
+    #h5_path = os.path.join(dataset_main_path, '../zhao/latent_capsules/')
+    h5_path = "/home/ry/Documents/pcl-master/dataset/zhao/latent_capsules/"
+
     train_dataset =  saved_latent_caps_loader.Saved_latent_caps_loader(
-            dataset=opt.dataset, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=True, train=True,resized=data_resized)
+            dataset=opt.dataset, h5path=h5_path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=True, train=True,resized=data_resized)
     test_dataset =  saved_latent_caps_loader.Saved_latent_caps_loader(
-            dataset=opt.dataset, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=False, train=False,resized=False)
+            dataset=opt.dataset, h5path=h5_path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=False, train=False,resized=False)
 
 
 #  load the SemiConvSegNet
@@ -234,7 +236,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_epochs', type=int, default=300, help='number of epochs to train for')
+    parser.add_argument('--n_epochs', type=int, default=100, help='number of epochs to train for')
     parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
@@ -243,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='../AE/tmp_checkpoints/shapenet_part_dataset__64caps_64vec_70.pth', help='model path')
+    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelent40')
     parser.add_argument('--outf', type=str, default='tmp_checkpoints', help='output folder')
     parser.add_argument('--percent_training_dataset', type=int, default=100, help='traing cls with percent of training_data')
