@@ -61,7 +61,8 @@ def main():
 
     for i in range(opt.batch_size):
 
-        LATENT_FILENAME = "tmp_lcs/cbvae_latcaps_airplane_%03d.pt"%i
+        #LATENT_FILENAME = "tmp_lcs/cbvae_latcaps_airplane_%03d.pt"%i
+        LATENT_FILENAME = "tmp_lcs/generated_capsules.pt"
 
         print("[INFO] Opening", LATENT_FILENAME)
         slc = torch.load(LATENT_FILENAME) # single latent capsule

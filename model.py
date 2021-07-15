@@ -186,11 +186,12 @@ class PointCapsNet(nn.Module):
 
 
 class CapsSegNet(nn.Module):    
-    def __init__(self, latent_caps_size,latent_vec_size , num_classes):
+    def __init__(self, latent_caps_size,latent_vec_size , num_classes, num_cats=16):
+        ''' num_classes: total part classes in all categories, num_cats: number of category'''
         super(CapsSegNet, self).__init__()
         self.num_classes=num_classes
         self.latent_caps_size=latent_caps_size
-        self.seg_convs= nn.Conv1d(latent_vec_size+16, num_classes, 1)    
+        self.seg_convs= nn.Conv1d(latent_vec_size+num_cats, num_classes, 1)    
 
     def forward(self, data):
         batchsize= data.size(0)

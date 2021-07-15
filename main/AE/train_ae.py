@@ -22,7 +22,6 @@ from logger import Logger
 
 USE_CUDA = True
 LOGGING = True
-CLASS_CHOICE = "Airplane"
 
 
 def main():
@@ -52,10 +51,10 @@ def main():
 
     # select dataset    
     if opt.dataset=='shapenet_part':
-        train_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='train', class_choice=CLASS_CHOICE)
+        train_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='train')
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
     elif opt.dataset=='shapenet_core13':
-        train_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=True, class_choice=CLASS_CHOICE)
+        train_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=True)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
     elif opt.dataset=='shapenet_core55':
         train_dataset = shapenet_core55_loader.Shapnet55Dataset(batch_size=opt.batch_size, npoints=opt.num_points, shuffle=True, train=True)
@@ -64,16 +63,7 @@ def main():
     #loss_mode = 'gaussian' # loss_mode was decoder_list in bVAE
     loss_mode = 'chamfer' 
 
-    loss_objective = "H" # Higgin et al "H", or Burgess et al "B"
-
-    C_max = 25          # default 25, pending addition to args
-    C_stop_iter = 1e5   # default 1e5, pending addition to args
-    global_iter = 0     # iteration count
-    C_max = Variable(torch.FloatTensor([C_max]).cuda()) # use_cuda = True
-
-    gamma = 1000        # default 1000, pending addition to args
-    beta = 4            # default 4, pending addition to args
-    w_beta = 0.5        # weight assigned to beta loss against reconstruction loss (chamfer distance)
+    global_iter = 0
 
 
     # training process for 'shapenet_part' or 'shapenet_core13'
@@ -135,72 +125,7 @@ def main():
 
     # training process for 'shapenet_core55' (NOT UP-TO-DATE)
     else:
-        for epoch in range(opt.n_epochs+1):
-            if epoch < 20:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.001)
-            elif epoch<50:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.0001)
-            else:
-                optimizer = optim.Adam(capsule_net.parameters(), lr=0.00001)
-        
-            #capsule_net.train()
-            train_loss_sum, recon_loss_sum, beta_loss_sum = 0, 0, 0
-
-            while train_dataset.has_next_batch():
-                global_iter += 1
-
-                batch_id, points_= train_dataset.next_batch()
-                points = torch.from_numpy(points_)
-                if(points.size(0)<opt.batch_size):
-                    break
-                points = Variable(points)
-                points = points.transpose(2, 1)
-                if USE_CUDA:
-                    points = points.cuda()
-
-                optimizer.zero_grad()
-
-                # ---- CRITICAL PART: same as above
-                x_recon, mu, logvar = capsule_net(points)
-                recon_loss = reconstruction_loss(points, x_recon, loss_mode)
-                total_kld, dim_wise_kld, mean_kld = kl_divergence(mu, logvar)
-
-                if loss_objective == 'H':
-                    beta_loss = beta*total_kld
-                elif loss_objective == 'B':
-                    C = torch.clamp(C_max/C_stop_iter*global_iter, 0, C_max.data[0])
-                    beta_loss = gamma*(total_kld-C).abs() 
-
-                train_loss = ((1-w_beta) * recon_loss + w_beta * beta_loss).sum()
-
-                train_loss.backward()
-                optimizer.step()
-                train_loss_sum += train_loss.item()
-                recon_loss_sum += recon_loss.item()
-                beta_loss_sum += beta_loss.sum().item()
-                # ---- END OF CRITICAL PART ----       
-
-                if LOGGING:
-                    info = {'train_loss': scalar_loss.item()}
-                    for tag, value in info.items():
-                        logger.scalar_summary(
-                            tag, value, (int(57448/opt.batch_size) * epoch) + batch_id + 1)
-                    
-                if batch_id % 50 == 0:
-                    print('batch_no: %d / %d at epoch %d; train_loss: %f ' %  (batch_id, int(57448/opt.batch_size),epoch,train_loss.item() )) # the dataset size is 57448
-            
-            print('Average train loss of epoch %d : %f' % \
-                (epoch, (train_loss_sum / int(57448/opt.batch_size))))   
-            print("Average reconstruction loss (10x): %f, beta loss (1e4x): %f" % \
-                (recon_loss_sum * 100 / int(57448/opt.batch_size), beta_loss_sum * 10000 / int(57448/opt.batch_size)) )
-
-            train_dataset.reset()
-
-            if epoch % 5 == 0:
-                dict_name = "%s/%s_dataset_%dcaps_%dvec_%d.pth"%\
-                    (opt.outf, opt.dataset, opt.latent_caps_size, opt.latent_vec_size, epoch)
-                torch.save(capsule_net.module.state_dict(), dict_name)
-
+        raise NotImplementedError()
 
 if __name__ == "__main__":
 

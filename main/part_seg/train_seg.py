@@ -32,7 +32,7 @@ import json
 
 def ResizeDataset(percentage, n_classes, shuffle):
     dataset_main_path=os.path.abspath(os.path.join(BASE_DIR, '../../dataset'))
-    ori_file_name=os.path.join(dataset_main_path, 'zhao/latent_capsules/saved_train_with_part_label.h5')           
+    ori_file_name=os.path.join(dataset_main_path, 'zhao/latent_capsules/saved_train_with_part_label_selected.h5')           
     out_file_name=ori_file_name+"_resized.h5"
     if os.path.exists(out_file_name):
         os.remove(out_file_name)
@@ -59,7 +59,7 @@ def ResizeDataset(percentage, n_classes, shuffle):
     print ('class distribution of this dataset :',class_dist)
         
     class_dist_new= (percentage*class_dist/100).astype(int)
-    for i in range(16):
+    for i in range(opt.n_cats):
         if class_dist_new[i]<1 :
             class_dist_new[i]=1
     class_dist_count=np.zeros(n_classes)
@@ -108,24 +108,23 @@ def main():
     on2oid = {objcats[i]:i for i in range(len(objcats))}
     fin.close()
 
+    h5path = "dataset/zhao/latent_capsules/"
+
     
 # load the dataset
     data_resized=False
     if(opt.percent_training_dataset<100):            
-        ResizeDataset( percentage=opt.percent_training_dataset, n_classes=16,shuffle=True)
+        ResizeDataset( percentage=opt.percent_training_dataset, n_classes=opt.n_cats,shuffle=True)
         data_resized=True
    
-    #h5_path = os.path.join(dataset_main_path, '../zhao/latent_capsules/')
-    h5_path = "/home/ry/Documents/pcl-master/dataset/zhao/latent_capsules/"
-
     train_dataset =  saved_latent_caps_loader.Saved_latent_caps_loader(
-            dataset=opt.dataset, h5path=h5_path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=True, train=True,resized=data_resized)
+            dataset=opt.dataset, h5path=h5path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=True, train=True,resized=data_resized)
     test_dataset =  saved_latent_caps_loader.Saved_latent_caps_loader(
-            dataset=opt.dataset, h5path=h5_path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=False, train=False,resized=False)
+            dataset=opt.dataset, h5path=h5path, batch_size=opt.batch_size, npoints=opt.num_points, with_seg=True, shuffle=False, train=False,resized=False)
 
 
 #  load the SemiConvSegNet
-    caps_seg_net = CapsSegNet(latent_caps_size=opt.latent_caps_size, latent_vec_size=opt.latent_vec_size , num_classes=opt.n_classes)    
+    caps_seg_net = CapsSegNet(latent_caps_size=opt.latent_caps_size, latent_vec_size=opt.latent_vec_size , num_classes=opt.n_classes, num_cats=opt.n_cats)    
 #    if opt.part_model != '':
 #        caps_seg_net.load_state_dict(torch.load(opt.part_model))            
     if USE_CUDA:
@@ -144,7 +143,7 @@ def main():
             latent_caps_, part_label,cls_label = train_dataset.next_batch()            
             
             # translate the part label to one hot
-            cur_label_one_hot = np.zeros((len(latent_caps_), 16), dtype=np.float32) # shapnet part has 16 catagories
+            cur_label_one_hot = np.zeros((len(latent_caps_), opt.n_cats), dtype=np.float32) # shapnet part has 16 catagories
             for i in range(len(latent_caps_)):
                 cur_label_one_hot[i, cls_label[i]] = 1
                 iou_oids = object2setofoid[objcats[cls_label[i]]]
@@ -161,7 +160,7 @@ def main():
             if USE_CUDA:
                 latent_caps,target = latent_caps.cuda(), target.cuda()                        
             cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-            expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),16,opt.latent_caps_size).transpose(1,2)  
+            expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)  
             expand=Variable(expand).cuda()
             latent_caps=torch.cat((latent_caps,expand),2)
     
@@ -193,7 +192,7 @@ def main():
             batch_id=0
             while test_dataset.has_next_batch():
                 latent_caps, part_label,cls_label = test_dataset.next_batch()
-                cur_label_one_hot = np.zeros((len(latent_caps), 16), dtype=np.float32)
+                cur_label_one_hot = np.zeros((len(latent_caps), opt.n_cats), dtype=np.float32)
                 for i in range(len(latent_caps)):
                     cur_label_one_hot[i, cls_label[i]] = 1
                     iou_oids = object2setofoid[objcats[cls_label[i]]]
@@ -209,7 +208,7 @@ def main():
                     latent_caps,target = latent_caps.cuda(), target.cuda()
                 
                 cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-                expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),16,opt.latent_caps_size).transpose(1,2)        
+                expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)        
                 expand=Variable(expand).cuda()
                 latent_caps=torch.cat((latent_caps,expand),2)
                 
@@ -236,7 +235,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_epochs', type=int, default=100, help='number of epochs to train for')
+    parser.add_argument('--n_epochs', type=int, default=51, help='number of epochs to train for')
     parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
@@ -245,12 +244,12 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
+    parser.add_argument('--model', type=str, default='../AE/tmp_checkpoints/shapenet_part_dataset__64caps_64vec_70.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelent40')
     parser.add_argument('--outf', type=str, default='tmp_checkpoints', help='output folder')
     parser.add_argument('--percent_training_dataset', type=int, default=100, help='traing cls with percent of training_data')
     parser.add_argument('--n_classes', type=int, default=50, help='part classes in all the catagories')
-
+    parser.add_argument('--n_cats', type=int, default=16, help='number of categories in the dataset')
     opt = parser.parse_args()
     print(opt)
 

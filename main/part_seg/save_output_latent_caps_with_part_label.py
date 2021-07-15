@@ -31,9 +31,6 @@ viz = visualization.Visualizer()
 KDTreeFlann = geometry.KDTreeFlann
 
 
-CLASS_CHOICE = "Airplane"
-
-
 def main():
     USE_CUDA = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -52,7 +49,7 @@ def main():
             split='train'
         else :
             split='test'            
-        dataset = shapenet_part_loader.PartDataset(classification=False, npoints=opt.num_points, split=split, class_choice=CLASS_CHOICE)
+        dataset = shapenet_part_loader.PartDataset(classification=False, npoints=opt.num_points, split=split)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
         
 # init saving process
@@ -62,10 +59,13 @@ def main():
     out_file_path=os.path.join(dataset_main_path, "../../dataset/zhao/latent_capsules/")
     if not os.path.exists(out_file_path):
         os.makedirs(out_file_path);   
+    #assert (not opt.save_training)
     if opt.save_training:
-        out_file_name=out_file_path+"/saved_train_with_part_label_%s.h5"%(CLASS_CHOICE.lower())
+        out_file_name=out_file_path+"/saved_train_with_part_label_selected.h5"
+        #out_file_name=out_file_path+"/saved_train_with_part_label.h5"
     else:
-        out_file_name=out_file_path+"/saved_test_with_part_label_%s.h5"%(CLASS_CHOICE.lower())        
+        out_file_name=out_file_path+"/saved_test_with_part_label_selected.h5"
+        #out_file_name=out_file_path+"/saved_test_with_part_label.h5"
     if os.path.exists(out_file_name):
         os.remove(out_file_name)
     fw = h5py.File(out_file_name, 'w', libver='latest')
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_training', type=bool, default=True, help='save the output latent caps of training data or test data')
     #parser.add_argument('--save_training', help='save the output latent caps of training data or test data', action='store_true')
 
-    parser.add_argument('--n_classes', type=int, default=16, help='catagories of current dataset')
+    parser.add_argument('--n_classes', type=int, default=16, help='catagories (of parts i suppose) of current dataset')
 
     opt = parser.parse_args()
     print(opt)

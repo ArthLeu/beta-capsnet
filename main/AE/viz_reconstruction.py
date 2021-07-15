@@ -66,7 +66,7 @@ def main():
 
     
     if opt.dataset=='shapenet_part':
-        test_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='test', class_choice="Skateboard")
+        test_dataset = shapenet_part_loader.PartDataset(classification=True, npoints=opt.num_points, split='test', class_choice="Airplane")
         test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4)        
     elif opt.dataset=='shapenet_core13':
         test_dataset = shapenet_core13_loader.ShapeNet(normal=False, npoints=opt.num_points, train=False)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
+    parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_airplane_64x64_25.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55')
     opt = parser.parse_args()
     print(opt)

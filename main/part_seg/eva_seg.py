@@ -80,7 +80,7 @@ def main():
  
     
 # load the model for capsule wised part segmentation      
-    caps_seg_net = CapsSegNet(latent_caps_size=opt.latent_caps_size, latent_vec_size=opt.latent_vec_size , num_classes=opt.n_classes)    
+    caps_seg_net = CapsSegNet(latent_caps_size=opt.latent_caps_size, latent_vec_size=opt.latent_vec_size , num_classes=opt.n_classes, num_cats=opt.n_cats)    
     if opt.part_model != '':
         caps_seg_net.load_state_dict(torch.load(opt.part_model))
     if USE_CUDA:
@@ -123,14 +123,14 @@ def main():
         
         
         #concatanete the latent caps with one-hot part label
-        cur_label_one_hot = np.zeros((opt.batch_size, 16), dtype=np.float32)
+        cur_label_one_hot = np.zeros((opt.batch_size, opt.n_cats), dtype=np.float32)
         for i in range(opt.batch_size):
             cur_label_one_hot[i, cls_label[i]] = 1
             iou_oids = object2setofoid[objcats[cls_label[i]]]
             for j in range(opt.num_points):
                 part_label[i,j]=iou_oids[part_label[i,j]]
         cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-        expand =cur_label_one_hot.unsqueeze(2).expand(opt.batch_size, 16, opt.latent_caps_size).transpose(1,2)
+        expand =cur_label_one_hot.unsqueeze(2).expand(opt.batch_size, opt.n_cats, opt.latent_caps_size).transpose(1,2)
         expand,latent_caps=Variable(expand),Variable(latent_caps)
         expand,latent_caps=expand.cuda(),latent_caps.cuda()
         print(expand.shape)
@@ -144,7 +144,7 @@ def main():
         output=caps_seg_net(latent_caps)        
         for i in range (opt.batch_size):
             iou_oids = object2setofoid[objcats[cls_label[i]]]
-            non_cat_labels = list(set(np.arange(50)).difference(set(iou_oids))) # there are 50 part classes in all the 16 catgories of objects
+            non_cat_labels = list(set(np.arange(opt.n_classes)).difference(set(iou_oids))) # there are 50 part classes in all the 16 catgories of objects
             mini = torch.min(output[i,:,:])
             output[i,:, non_cat_labels] = mini - 1000   
         pred_choice = output.data.cpu().max(2)[1]
@@ -218,10 +218,11 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--part_model', type=str, default='checkpoints/part_seg_1percent.pth', help='model path for the pre-trained part segmentation network')
+    parser.add_argument('--part_model', type=str, default='checkpoints/part_seg_100percent.pth', help='model path for the pre-trained part segmentation network')
     parser.add_argument('--model', type=str, default='checkpoints/shapenet_part_dataset_ae_200.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelent40')
     parser.add_argument('--n_classes', type=int, default=50, help='part classes in all the catagories')
+    parser.add_argument('--n_cats', type=int, default=16, help='count of catagories')
     parser.add_argument('--class_choice', type=str, default='Airplane', help='choose the class to eva')
 
     opt = parser.parse_args()

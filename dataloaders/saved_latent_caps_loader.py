@@ -17,9 +17,11 @@ class Saved_latent_caps_loader(object):
     def __init__(self, dataset, h5path, batch_size=32, npoints=1024, with_seg=False, shuffle=True, train=False,resized=False):
         if(with_seg):
             if train:
-                self.h5_file = os.path.join(h5path,"saved_train_with_part_label_airplane.h5")
+                self.h5_file = os.path.join(h5path,"saved_train_with_part_label_selected.h5")
+                #self.h5_file = os.path.join(h5path,"saved_train_with_part_label.h5")
             else:
-                self.h5_file=os.path.join(h5path,"saved_test_with_part_label_airplane.h5")
+                #self.h5_file=os.path.join(h5path,"saved_test_with_part_label_selected.h5")
+                self.h5_file = os.path.join(h5path,"saved_train_with_part_label.h5")
         else:
             if train:
                 self.h5_file=os.path.join(h5path,"saved_train_wo_part_label.h5")
