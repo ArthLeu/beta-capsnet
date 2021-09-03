@@ -20,8 +20,8 @@ class Saved_latent_caps_loader(object):
                 self.h5_file = os.path.join(h5path,"saved_train_with_part_label_selected.h5")
                 #self.h5_file = os.path.join(h5path,"saved_train_with_part_label.h5")
             else:
-                #self.h5_file=os.path.join(h5path,"saved_test_with_part_label_selected.h5")
-                self.h5_file = os.path.join(h5path,"saved_train_with_part_label.h5")
+                self.h5_file=os.path.join(h5path,"saved_test_with_part_label_selected.h5")
+                #self.h5_file = os.path.join(h5path,"saved_test_with_part_label.h5")
         else:
             if train:
                 self.h5_file=os.path.join(h5path,"saved_train_wo_part_label.h5")
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     #print(ps_batch.shape)
     #print(cls_batch.shape)
 
-    h5_filename = "/home/ry/Documents/pcl-master/dataset/zhao/latent_capsules/saved_test_with_part_label.h5"
+    h5_filename = "/home/ry/Documents/pcl-master/dataset/zhao/latent_capsules/saved_test_with_part_label_selected.h5"
     f = h5py.File(h5_filename, "r")
     print(f)
     data = f['data'][:]

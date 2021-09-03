@@ -123,14 +123,14 @@ def main():
         
         
         #concatanete the latent caps with one-hot part label
-        cur_label_one_hot = np.zeros((opt.batch_size, opt.n_cats), dtype=np.float32)
+        cls_labels_one_hot = np.zeros((opt.batch_size, opt.n_cats), dtype=np.float32)
         for i in range(opt.batch_size):
-            cur_label_one_hot[i, cls_label[i]] = 1
+            cls_labels_one_hot[i, cls_label[i]] = 1
             iou_oids = object2setofoid[objcats[cls_label[i]]]
             for j in range(opt.num_points):
                 part_label[i,j]=iou_oids[part_label[i,j]]
-        cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-        expand =cur_label_one_hot.unsqueeze(2).expand(opt.batch_size, opt.n_cats, opt.latent_caps_size).transpose(1,2)
+        cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+        expand =cls_labels_one_hot.unsqueeze(2).expand(opt.batch_size, opt.n_cats, opt.latent_caps_size).transpose(1,2)
         expand,latent_caps=Variable(expand),Variable(latent_caps)
         expand,latent_caps=expand.cuda(),latent_caps.cuda()
         print(expand.shape)

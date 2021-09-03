@@ -57,6 +57,8 @@ def seg_and_viz(latent_caps, reconstructions):
             object2setofoid[objid] = []
         object2setofoid[objid].append(idx)
     
+    print(object2setofoid)
+    
     all_obj_cat_file = os.path.join(dataset_main_path, DATASET, 'shapenetcore_partanno_segmentation_benchmark_v0/synsetoffset2category.txt')
     fin = open(all_obj_cat_file, 'r')
     lines = [line.rstrip() for line in fin.readlines()]
@@ -119,14 +121,14 @@ def seg_and_viz(latent_caps, reconstructions):
     
     
     #concatanete the latent caps with one-hot part label
-    cur_label_one_hot = np.zeros((BATCH_SIZE, 16), dtype=np.float32)
+    cls_labels_one_hot = np.zeros((BATCH_SIZE, 16), dtype=np.float32)
     for i in range(BATCH_SIZE):
-        cur_label_one_hot[i, cat_no[CLASS_CHOICE]] = 1
+        cls_labels_one_hot[i, cat_no[CLASS_CHOICE]] = 1
         iou_oids = object2setofoid[objcats[cat_no[CLASS_CHOICE]]]
         #for j in range(opt.num_points):
         #    part_label[i,j]=iou_oids[part_label[i,j]]
-    cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-    expand =cur_label_one_hot.unsqueeze(2).expand(BATCH_SIZE, 16, LATENT_CAPS_SIZE).transpose(1,2) # latent_caps_size = 64
+    cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+    expand =cls_labels_one_hot.unsqueeze(2).expand(BATCH_SIZE, 16, LATENT_CAPS_SIZE).transpose(1,2) # latent_caps_size = 64
     expand,latent_caps=Variable(expand),Variable(latent_caps)
     expand,latent_caps=expand.cuda(),latent_caps.cuda()
     #print(expand.shape)

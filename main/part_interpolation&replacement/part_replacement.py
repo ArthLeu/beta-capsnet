@@ -223,11 +223,11 @@ def main():
         latent_caps, reconstructions= capsule_net(points_)
         reconstructions=reconstructions.transpose(1,2).data.cpu()
     
-        cur_label_one_hot = np.zeros((2, 16), dtype=np.float32)
+        cls_labels_one_hot = np.zeros((2, 16), dtype=np.float32)
         for i in range(2):
-            cur_label_one_hot[i, cls_label[i]] = 1
-        cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-        expand =cur_label_one_hot.unsqueeze(2).expand(2,16,opt.latent_caps_size).transpose(1,2)
+            cls_labels_one_hot[i, cls_label[i]] = 1
+        cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+        expand =cls_labels_one_hot.unsqueeze(2).expand(2,16,opt.latent_caps_size).transpose(1,2)
 
         latent_caps, expand = Variable(latent_caps), Variable(expand)
         latent_caps,expand = latent_caps.cuda(), expand.cuda()

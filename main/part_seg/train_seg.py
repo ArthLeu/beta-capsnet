@@ -143,9 +143,10 @@ def main():
             latent_caps_, part_label,cls_label = train_dataset.next_batch()            
             
             # translate the part label to one hot
-            cur_label_one_hot = np.zeros((len(latent_caps_), opt.n_cats), dtype=np.float32) # shapnet part has 16 catagories
+            cls_labels_one_hot = np.zeros((len(latent_caps_), opt.n_cats), dtype=np.float32) # shapnet part has 16 catagories
+            # latent_caps_ : latent capsules in batch of 8
             for i in range(len(latent_caps_)):
-                cur_label_one_hot[i, cls_label[i]] = 1
+                cls_labels_one_hot[i, cls_label[i]] = 1 # 
                 iou_oids = object2setofoid[objcats[cls_label[i]]]
                 for j in range(opt.latent_caps_size):
                     part_label[i,j]=iou_oids[part_label[i,j]]
@@ -159,8 +160,8 @@ def main():
             latent_caps, target = Variable(latent_caps), Variable(target)
             if USE_CUDA:
                 latent_caps,target = latent_caps.cuda(), target.cuda()                        
-            cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-            expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)  
+            cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+            expand =cls_labels_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)  
             expand=Variable(expand).cuda()
             latent_caps=torch.cat((latent_caps,expand),2)
     
@@ -192,9 +193,9 @@ def main():
             batch_id=0
             while test_dataset.has_next_batch():
                 latent_caps, part_label,cls_label = test_dataset.next_batch()
-                cur_label_one_hot = np.zeros((len(latent_caps), opt.n_cats), dtype=np.float32)
+                cls_labels_one_hot = np.zeros((len(latent_caps), opt.n_cats), dtype=np.float32)
                 for i in range(len(latent_caps)):
-                    cur_label_one_hot[i, cls_label[i]] = 1
+                    cls_labels_one_hot[i, cls_label[i]] = 1
                     iou_oids = object2setofoid[objcats[cls_label[i]]]
                     for j in range(opt.latent_caps_size):
                         part_label[i,j]=iou_oids[part_label[i,j]]
@@ -207,8 +208,8 @@ def main():
                 if USE_CUDA:
                     latent_caps,target = latent_caps.cuda(), target.cuda()
                 
-                cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-                expand =cur_label_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)        
+                cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+                expand =cls_labels_one_hot.unsqueeze(2).expand(len(latent_caps),opt.n_cats,opt.latent_caps_size).transpose(1,2)        
                 expand=Variable(expand).cuda()
                 latent_caps=torch.cat((latent_caps,expand),2)
                 
@@ -235,7 +236,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_epochs', type=int, default=51, help='number of epochs to train for')
+    parser.add_argument('--n_epochs', type=int, default=101, help='number of epochs to train for')
     parser.add_argument('--batch_size', type=int, default=8, help='input batch size')
 
     parser.add_argument('--prim_caps_size', type=int, default=1024, help='number of primary point caps')
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument('--latent_vec_size', type=int, default=64, help='scale of latent caps')
 
     parser.add_argument('--num_points', type=int, default=2048, help='input point set size')
-    parser.add_argument('--model', type=str, default='../AE/tmp_checkpoints/shapenet_part_dataset__64caps_64vec_70.pth', help='model path')
+    parser.add_argument('--model', type=str, default='tmp_checkpoints/shapenet_part_dataset_64caps_64vec_50.pth', help='model path')
     parser.add_argument('--dataset', type=str, default='shapenet_part', help='dataset: shapenet_part, shapenet_core13, shapenet_core55, modelent40')
     parser.add_argument('--outf', type=str, default='tmp_checkpoints', help='output folder')
     parser.add_argument('--percent_training_dataset', type=int, default=100, help='traing cls with percent of training_data')

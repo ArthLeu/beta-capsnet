@@ -146,11 +146,11 @@ def main():
         
         
         # create one hot label for the current class
-        cur_label_one_hot = np.zeros((2, 16), dtype=np.float32)
+        cls_labels_one_hot = np.zeros((2, 16), dtype=np.float32)
         for i in range(2):
-            cur_label_one_hot[i, cls_label[i]] = 1
-        cur_label_one_hot=torch.from_numpy(cur_label_one_hot).float()        
-        expand =cur_label_one_hot.unsqueeze(2).expand(2,16,opt.latent_caps_size).transpose(1,2)
+            cls_labels_one_hot[i, cls_label[i]] = 1
+        cls_labels_one_hot=torch.from_numpy(cls_labels_one_hot).float()        
+        expand =cls_labels_one_hot.unsqueeze(2).expand(2,16,opt.latent_caps_size).transpose(1,2)
         
          # recontstruct from the original presaved capsule
         latent_caps, target,expand = Variable(latent_caps), Variable(target), Variable(expand)
